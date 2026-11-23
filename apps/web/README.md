@@ -115,7 +115,8 @@ Do not expose or reverse-proxy this local tool onto a network.
 README and descriptor reads are limited to discovered datasets and the fixed
 filenames (`README.md` and `datapackage.json`). They are bounded to 5 MiB and
 require regular, single-link UTF-8 files. The separate resource counter reads only
-safe selected paths and has byte, traversal, depth and time limits. These checks
+safe selected paths and has byte, traversal, depth and time limits. Directory
+counts omit dot-prefixed files and directories. These checks
 reduce risk but do not sandbox hostile concurrent filesystem changes. Only an
 explicit Save writes the descriptor and, when checks pass, its generated README.
 

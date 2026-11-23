@@ -7,15 +7,6 @@ READMEs and lets you edit, preview and save metadata locally. Save regenerates t
 README when metadata checks pass, keeping human notes and existing resource
 counts. Direct JSON editing and dataset creation are not implemented.
 
-## Rename status
-
-The repository and current source use Penjaga. The package names are now
-`@penjaga/validator` and `@penjaga/steward`; the CLI is `penjaga-validate`.
-The renamed validator is published as v2.0.0 and adopted by the template and
-portal. Historical archives keep their original package/CLI names. The flexible
-bucket columns documented in current source are not in v2.0.0; they require a
-new breaking release and separate consumer upgrades.
-
 ## Development
 
 Use Node.js 24 LTS and pnpm 12.x. From this directory:
