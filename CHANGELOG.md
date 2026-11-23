@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.1.0](https://github.com/budaya-lab/penjaga/compare/v3.0.0...v3.1.0) (2026-11-23)
+
+
+### Features
+
+* **steward:** add demo datasets and widen README tables ([7f15239](https://github.com/budaya-lab/penjaga/commit/7f15239bb474acf2082717cb7c81cf1acd19294f))
+* **steward:** add demo datasets and widen README tables ([4e5736a](https://github.com/budaya-lab/penjaga/commit/4e5736aa2329630e59f0e0b467722d774d5a8ff5))
+
 ## [3.0.0](https://github.com/budaya-lab/penjaga/compare/v2.0.0...v3.0.0) (2026-11-23)
 
 
