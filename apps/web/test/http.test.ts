@@ -444,6 +444,58 @@ for (const mode of ['dev', 'built'] as const) {
     assert.equal(await fs.readFile(outside, 'utf8'), 'outside README marker');
   });
 
+  test(`${mode}: shows local bucket values independently of README and never changes dataset files`, async (t) => {
+    const root = await fixture(t);
+    const directory = join(root, 'ds-buckets');
+    await fs.mkdir(directory);
+    const path = join(directory, 'buckets.csv');
+    await fs.writeFile(path, 'Group,Mean score\n001,0.75\n"<script>label</script>",0\n');
+    const before = await snapshot(root);
+    const { url, logs } = await serve(t, mode, root);
+    const response = await fetch(`${url}/datasets/ds-buckets`);
+    assert.equal(response.status, 200, logs());
+    const html = (await response.text()).replace(/<!--[\s\S]*?-->/g, '');
+    const summary = html.match(/<section\b[^>]*aria-label="Bucket summary"[^>]*>[\s\S]*?<\/section>/)?.[0];
+    assert.ok(summary, logs());
+    assert.match(html, /This dataset has no README.md/);
+    assert.match(summary, /Group/);
+    assert.match(summary, /Mean score/);
+    assert.match(summary, />001<\//);
+    assert.match(summary, />0\.75<\//);
+    assert.match(summary, /&lt;script(?:>|&gt;)label/);
+    assert.doesNotMatch(summary, /<script\b|<img\b/);
+    assert.doesNotMatch(summary, /<style\b|\sstyle=/, 'chart must work without inline styles blocked by the app CSP');
+    assert.deepEqual(await snapshot(root), before);
+
+    const readme = '# Dataset\n\n## Resources\n\n| Resource | Count |\n| --- | --- |\n| CSV | 2 |\n\n## Buckets\n\n| Old label | Old value |\n| --- | --- |\n| stale-bucket-marker | 99 |\n\n## Notes\n\nNotes after chart.\n';
+    await fs.writeFile(join(directory, 'README.md'), readme);
+    const embedded = (await (await fetch(`${url}/datasets/ds-buckets`)).text()).replace(/<!--[\s\S]*?-->/g, '');
+    const article = embedded.match(/<article\b[^>]*aria-label="Dataset README"[^>]*>[\s\S]*?<\/article>/)?.[0];
+    assert.ok(article);
+    assert.ok(article.indexOf('aria-label="Bucket summary"') > article.indexOf('>Buckets</h3>'));
+    assert.ok(article.indexOf('Notes after chart.') > article.indexOf('aria-label="Bucket summary"'));
+    assert.equal([...embedded.matchAll(/aria-label="Bucket summary"/g)].length, 1);
+    assert.match(article, />CSV<\//);
+    assert.doesNotMatch(article, /stale-bucket-marker|Old label/);
+    assert.equal(await fs.readFile(join(directory, 'README.md'), 'utf8'), readme);
+
+    await fs.writeFile(path, 'Item,Metric\n' + Array.from({ length: 105 }, (_, i) => `item-${i},0\n`).join(''));
+    const bounded = (await (await fetch(`${url}/datasets/ds-buckets`)).text()).replace(/<!--[\s\S]*?-->/g, '');
+    assert.match(bounded, /Showing the first 100 of 105 buckets in file order/);
+    assert.match(bounded, />item-99<\//);
+    assert.doesNotMatch(bounded, />item-100<\//);
+
+    await fs.writeFile(join(directory, 'README.md'), '# Still readable');
+    await fs.writeFile(path, 'label,value\nprivate-marker,-1\n');
+    const invalid = await (await fetch(`${url}/datasets/ds-buckets`)).text();
+    assert.match(invalid, /Bucket chart unavailable/);
+    assert.match(invalid, /Still readable/);
+    assert.doesNotMatch(invalid, /private-marker/);
+    await fs.unlink(path);
+    const missing = await (await fetch(`${url}/datasets/ds-buckets`)).text();
+    assert.doesNotMatch(missing, /aria-label="Bucket summary"|Bucket chart unavailable/);
+  });
+
   test(`${mode}: prefills keyword tags and matched-policy stages without writing files`, async (t) => {
     const root = await fixture(t); const directory = join(root, 'ds-keywords');
     await fs.mkdir(directory);
