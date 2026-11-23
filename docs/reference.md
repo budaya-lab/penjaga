@@ -37,9 +37,11 @@ Unknown keys and unsupported requirements fail validation.
 - Resources require unique names, titles and safe relative paths.
 - Keywords require exactly one nonblank `task:`, `project:` and controlled `stage:`
   value. Other nonblank keywords are allowed.
-- Provenance, counts and buckets are optional; supplied values are validated,
-  never invented. Directory resources omit `format`. `count` is a non-negative
-  safe integer for items, separate from `bytes`.
+- Provenance, resource counts and buckets are optional; supplied values are
+  validated, never invented. Directory resources omit `format`. Descriptor
+  `resources[].count` is a non-negative safe integer for declared resource items,
+  separate from bytes and Steward's live read-only counter; Steward does not
+  infer or update it.
 - Root `buckets.csv`, when present, has exactly an item-label column followed by
   a numeric column. Both headers may have any nonblank name and must be distinct
   after trimming. Labels are unique nonblank strings; values are non-negative
@@ -47,14 +49,15 @@ Unknown keys and unsupported requirements fail validation.
   non-decimal syntax, overflow, underflow to zero and unsafe integral results.
   It needs at least one row and must be a regular, non-symlink file with valid
   UTF-8 and strict CSV quoting, at most 1,000,000 bytes. Resource declaration is
-  optional. These are unreleased source rules; published v2.0.0 still requires
-  the second header `count` and non-negative safe-integer bucket values.
+  optional. Bucket values are metrics, not resource item counts. These flexible
+  bucket rules shipped in v3.0.0; the published v2.0.0 archive still requires the
+  second header `count` and non-negative safe-integer bucket values.
 
 `parseBuckets` returns `{ labelColumn, valueColumn, rows }`; each row uses those
 header names as keys. Use `row[buckets.valueColumn]`, not a fixed `row.count`.
 `BucketRow` no longer guarantees `count`, and `Buckets` requires `valueColumn`;
-these public type changes require a breaking release before consumer adoption.
-README generation uses both supplied headers. Resource `count` rules are unchanged.
+these API changes shipped in v3.0.0. README generation uses both supplied
+headers. Resource `count` rules are unchanged.
 
 Policy cannot disable path containment, resource-count range checks or bucket limits.
 
