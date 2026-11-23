@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.2.0](https://github.com/budaya-lab/penjaga/compare/v3.1.1...v3.2.0) (2026-11-23)
+
+
+### Features
+
+* **steward:** chart buckets in the readme view ([4e624a1](https://github.com/budaya-lab/penjaga/commit/4e624a1e85adfe3697d680647495f6fb20d65d53))
+* **steward:** chart buckets in the readme view ([2319298](https://github.com/budaya-lab/penjaga/commit/2319298ce15ae6491f285c895d336f8fb119a570))
+
 ## [3.1.1](https://github.com/budaya-lab/penjaga/compare/v3.1.0...v3.1.1) (2026-11-23)
 
 
