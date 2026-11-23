@@ -14,6 +14,9 @@ supports search and metadata-status filters.
   Exact matches to reviewed template README fingerprints are labelled; this does
   not prove dataset origin or quality. Opening the README tab requests fresh
   server data without a full-page reload, so saved changes appear immediately.
+  Optional root `buckets.csv` appears as a local horizontal chart with a values
+  table, using its supplied headers. The view shows at most 100 buckets in file
+  order and flags invalid files. No chart assets or README changes are written.
 - **Metadata** provides local form controls for Overview, Keywords, Resources,
   Sources, Licenses and Contributors, plus shared metadata checks. Edits update
   one in-memory object. They appear in the read-only `datapackage.json` preview
@@ -123,10 +126,11 @@ DATASET_ROOT="/absolute/path/to/datasets" pnpm --filter @penjaga/steward start
 The start wrapper binds to `127.0.0.1` and uses port 3000 unless `PORT` is set.
 Do not expose or reverse-proxy this local tool onto a network.
 
-README and descriptor reads are limited to discovered datasets and the fixed
-filenames (`README.md` and `datapackage.json`). They are bounded to 5 MiB and
-require regular, single-link UTF-8 files. The separate resource counter reads only
-safe selected paths and has byte, traversal, depth and time limits. Directory
+README, descriptor and bucket reads are limited to discovered datasets and the
+fixed filenames `README.md`, `datapackage.json` and `buckets.csv`. They are bounded
+to 5 MiB (1 MB for buckets) and require regular, single-link UTF-8 files. The
+separate resource counter reads only safe selected paths and has byte, traversal,
+depth and time limits. Directory
 counts omit dot-prefixed files and directories. These checks
 reduce risk but do not sandbox hostile concurrent filesystem changes. Only an
 explicit Save writes the descriptor and, when checks pass, its generated README.

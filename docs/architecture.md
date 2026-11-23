@@ -28,7 +28,11 @@ loads discover immediate `ds-*` directories. The dashboard returns folder names,
 metadata status and allowlisted summary values, not descriptor text or paths.
 Dataset detail defaults to README; Metadata and `datapackage.json` are separate
 views. The reader accepts only discovered datasets and the fixed filenames
-`README.md` and `datapackage.json`.
+`README.md`, `datapackage.json` and optional `buckets.csv`. The README view parses
+buckets with the shared parser and shows a local shadcn-svelte/LayerChart bar
+chart and values table, capped at 100 rows in file order. Missing buckets are
+omitted; invalid files show a warning without blocking the README. No chart
+assets are written or added to generated READMEs.
 
 README Markdown is parsed on the server into an allowlisted tree. Svelte renders
 escaped text and elements; raw HTML and images are disabled, and only credential-
