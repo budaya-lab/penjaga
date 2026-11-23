@@ -72,7 +72,7 @@ export function generateReadme(data: Record<string, unknown>, buckets?: Buckets,
   if (sources) parts.push('## Sources', sources);
   parts.push('## Resources', table(['Resource name', 'Title', 'Path', 'Format', 'Count'],
     rows(data.resources).map((row) => [row.name, row.title, row.path, row.format, countText(row)])), '## Buckets',
-    buckets ? table([buckets.labelColumn, 'Count'], buckets.rows.map((row) => [row[buckets.labelColumn], row.count]))
+    buckets ? table([buckets.labelColumn, buckets.valueColumn], buckets.rows.map((row) => [row[buckets.labelColumn], row[buckets.valueColumn]]))
       : '_No buckets available._');
   return `${generatedComment}\n\n${parts.join('\n\n')}\n\n${notesMarker}${notes(existing)}`;
 }

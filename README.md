@@ -11,9 +11,10 @@ counts. Direct JSON editing and dataset creation are not implemented.
 
 The repository and current source use Penjaga. The package names are now
 `@penjaga/validator` and `@penjaga/steward`; the CLI is `penjaga-validate`.
-These renamed packages have not been released yet. Existing published archives
-and consumer pins keep their original package/CLI names until a separately
-approved release and migration.
+The renamed validator is published as v2.0.0 and adopted by the template and
+portal. Historical archives keep their original package/CLI names. The flexible
+bucket columns documented in current source are not in v2.0.0; they require a
+new breaking release and separate consumer upgrades.
 
 ## Development
 

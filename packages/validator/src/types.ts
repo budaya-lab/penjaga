@@ -31,10 +31,10 @@ export interface DatasetPolicy {
 
 export interface BucketRow {
   [column: string]: string | number;
-  count: number;
 }
 
 export interface Buckets {
   labelColumn: string;
+  valueColumn: string;
   rows: BucketRow[];
 }

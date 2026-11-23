@@ -38,6 +38,20 @@ test('Save generates a README using saved counts without reading resources; iden
   assert.deepEqual((await fs.readdir(directory)).sort(), ['README.md', 'buckets.csv', 'datapackage.json']);
 });
 
+test('Save uses arbitrary bucket headers and non-negative floats without changing bucket bytes', async (t) => {
+  const { root, directory, path } = await fixture(t);
+  const buckets = 'items,Mean score\n001,1.25\n002,0\n';
+  await fs.writeFile(join(directory, 'buckets.csv'), buckets);
+  const result = await saveMetadata(root, 'ds-example', text);
+  assert.equal(result.readme, 'updated');
+  const readme = await fs.readFile(path, 'utf8');
+  assert.ok(readme.includes('| items | Mean score |'));
+  assert.ok(readme.includes('| 001 | 1.25 |'));
+  assert.ok(readme.includes('| 002 | 0 |'));
+  assert.equal(await fs.readFile(join(directory, 'buckets.csv'), 'utf8'), buckets);
+  assert.equal(await fs.readFile(join(directory, 'datapackage.json'), 'utf8'), text);
+});
+
 test('Save preserves existing README permissions and human notes, including without buckets', async (t) => {
   const { root, path } = await fixture(t);
   await fs.writeFile(path, '# Handwritten\n\nKeep this.\n', { mode: 0o640 });

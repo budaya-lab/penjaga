@@ -40,12 +40,23 @@ Unknown keys and unsupported requirements fail validation.
 - Provenance, counts and buckets are optional; supplied values are validated,
   never invented. Directory resources omit `format`. `count` is a non-negative
   safe integer for items, separate from `bytes`.
-- Root `buckets.csv`, when present, has exactly a label column followed by `count`,
-  unique nonblank labels, safe non-negative integer counts and at least one row.
-  It must be a regular, non-symlink file with valid UTF-8 and strict CSV quoting,
-  at most 1,000,000 bytes. Declaring it as a resource is optional.
+- Root `buckets.csv`, when present, has exactly an item-label column followed by
+  a numeric column. Both headers may have any nonblank name and must be distinct
+  after trimming. Labels are unique nonblank strings; values are non-negative
+  integers or floats in decimal/scientific notation. Reject non-finite values,
+  non-decimal syntax, overflow, underflow to zero and unsafe integral results.
+  It needs at least one row and must be a regular, non-symlink file with valid
+  UTF-8 and strict CSV quoting, at most 1,000,000 bytes. Resource declaration is
+  optional. These are unreleased source rules; published v2.0.0 still requires
+  the second header `count` and non-negative safe-integer bucket values.
 
-Policy cannot disable path containment, count range checks or bucket limits.
+`parseBuckets` returns `{ labelColumn, valueColumn, rows }`; each row uses those
+header names as keys. Use `row[buckets.valueColumn]`, not a fixed `row.count`.
+`BucketRow` no longer guarantees `count`, and `Buckets` requires `valueColumn`;
+these public type changes require a breaking release before consumer adoption.
+README generation uses both supplied headers. Resource `count` rules are unchanged.
+
+Policy cannot disable path containment, resource-count range checks or bucket limits.
 
 ### Tests and adoption
 

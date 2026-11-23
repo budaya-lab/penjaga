@@ -54,34 +54,39 @@ export function parseBuckets(input: string | Uint8Array): Buckets {
   if (
     header?.length !== 2 ||
     !header[0] ||
-    header[0] === 'count' ||
-    header[1] !== 'count'
+    !header[1] ||
+    header[0] === header[1]
   ) {
-    throw new Error('buckets.csv needs a label header followed by count');
+    throw new Error('buckets.csv needs two distinct nonblank headers: labels followed by numeric values');
   }
 
   if (!records.length) throw new Error('buckets.csv must contain at least one data row');
 
   const labelColumn = header[0];
+  const valueColumn = header[1];
   const labels = new Set<string>();
 
   const rows = records.map((values, index) => {
     const label = values[0]?.trim();
-    const count = values[1]?.trim();
+    const rawValue = values[1]?.trim() ?? '';
+    const value = Number(rawValue);
+    const significand = rawValue.split(/[eE]/)[0] ?? '';
 
     if (
       values.length !== 2 ||
       !label ||
       labels.has(label) ||
-      !/^\d+$/.test(count ?? '') ||
-      !Number.isSafeInteger(Number(count))
+      !/^\+?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(rawValue) ||
+      !Number.isFinite(value) ||
+      (Number.isInteger(value) && !Number.isSafeInteger(value)) ||
+      (value === 0 && /[1-9]/.test(significand))
     ) {
-      throw new Error(`buckets.csv row ${index + 2}: expected a unique label and non-negative safe-integer count`);
+      throw new Error(`buckets.csv row ${index + 2}: expected a unique label and non-negative finite number within the safe numeric range`);
     }
 
     labels.add(label);
-    return { [labelColumn]: label, count: Number(count) };
+    return { [labelColumn]: label, [valueColumn]: value };
   });
 
-  return { labelColumn, rows };
+  return { labelColumn, valueColumn, rows };
 }

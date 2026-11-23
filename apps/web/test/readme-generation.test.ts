@@ -45,6 +45,25 @@ test('generates a prose introduction, lists and only comparison tables using sup
   assert.equal(nodes.filter((node) => node.tag === 'ul').length, 2);
 });
 
+test('renders the supplied numeric bucket header and fractional values without changing resource counts', () => {
+  const buckets = parseBuckets('items,Mean score\n001,1.25\n002,0\n');
+  const before = structuredClone(buckets);
+  const readme = generateReadme(descriptor, buckets);
+  assert.ok(readme.includes('| items | Mean score |'));
+  assert.ok(readme.includes('| 001 | 1.25 |'));
+  assert.ok(readme.includes('| 002 | 0 |'));
+  assert.match(readme, /missing\.csv \| csv \| 42 rows/);
+  assert.deepEqual(buckets, before);
+});
+
+test('escapes arbitrary bucket headers rather than creating Markdown or HTML', () => {
+  const readme = generateReadme(descriptor, parseBuckets('items,"<script>x</script>|[value](https://example.org)"\nA,0.5\n'));
+  assert.ok(readme.includes('&lt;script&gt;x&lt;/script&gt;\\|\\[value\\]\\(https://example.org\\)'));
+  const rendered = JSON.stringify(renderReadme(readme).nodes);
+  assert.ok(!rendered.includes('"href":'));
+  assert.ok(rendered.includes('<script>x</script>'));
+});
+
 test('escapes descriptor and bucket text rather than injecting Markdown or HTML', () => {
   const readme = generateReadme({ ...descriptor, title: '# [click](https://example.org)',
     description: '<script>x</script>\n| ![image](https://example.org/x)',

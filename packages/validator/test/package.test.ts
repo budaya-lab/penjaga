@@ -32,7 +32,7 @@ test('portable exports work without Node globals or built-in imports', () => {
     errors: [],
     stage: 'master',
     label: 'Master collection',
-    buckets: { labelColumn: 'year', rows: [{ year: '001', count: 2 }] },
+    buckets: { labelColumn: 'year', valueColumn: 'score', rows: [{ year: '001', score: 2.5 }] },
   });
 });
 
@@ -112,7 +112,7 @@ test('an isolated consumer uses its bundled policy and never changes files, incl
 
     assert.match(unchanged(() => local.validateDataPackage(data, dataset)).join('\n'), /buckets.csv is required/);
 
-    writeFileSync(join(dataset, 'buckets.csv'), 'year,count\n001,2\n');
+    writeFileSync(join(dataset, 'buckets.csv'), 'year,score\n001,2.5\n');
     assert.deepEqual(unchanged(() => local.validateDataPackage(data, dataset)), []);
 
     const cli = join(bundle, 'dist/cli.js');
