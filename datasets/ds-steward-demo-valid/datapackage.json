@@ -35,6 +35,11 @@
       "title": "PDF document (not countable)",
       "path": "overview.pdf",
       "format": "pdf"
+    },
+    {
+      "name": "directory",
+      "path": "directory/",
+      "title": "A directory of data file"
     }
   ],
   "created": "2026-11-23T00:00:00+08:00"

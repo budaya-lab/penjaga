@@ -43,11 +43,22 @@ Contributors map Name to Data Package `title` and support optional Roles.
 
 Resources allow local row edits and safe root-path suggestions. Choosing a path
 also fills and synchronizes its generated Name and Format, while preserving manual
-overrides. Counts are separate, read-only snapshots: CSV/TSV data rows (excluding
-the header), JSON array items, JSONL records or files in a directory. The path
-extension selects the counter, even when Format is overridden. Unsupported formats
-are marked “Not countable”; read and safety failures are not reported as zero.
-Counts never enter the metadata draft.
+overrides. The path extension selects the live counter, even when Format is
+overridden. Unsupported formats are marked “Not countable”; read and safety
+failures are not reported as zero. Live counts never enter the metadata draft.
+
+The word “count” refers to different values:
+
+- **Live Resource counter:** CSV/TSV data rows (header excluded), top-level JSON
+  array items, nonblank JSONL records, or visible regular files recursively inside
+  a selected directory. Directory counts do not inspect or count rows inside those
+  files; dot-prefixed files and directories are omitted.
+- **`datapackage.json` `resources[].count`:** a supplied, non-negative safe
+  integer for the resource's item count. Steward does not infer or update it from
+  live counts.
+- **`buckets.csv` numeric values:** metrics associated with bucket labels, not
+  resource item counts or directory file totals. Values may be non-negative
+  integers or decimals.
 
 ## Save
 
@@ -63,11 +74,11 @@ revision/conflict detection: Save overwrites the descriptor currently on disk.
 Basic file permissions and ownership are retained, but ACLs and extended
 attributes are not preserved. After the descriptor is saved, passing metadata
 checks trigger `README.md` generation. The README includes supplied metadata,
-existing resource counts and optional `buckets.csv` (item labels followed by
-non-negative numeric values, at most 1 MB). Bucket values may be integers or
-floats, and both supplied column headers appear in the table. Resource `count`
-still requires a non-negative safe integer. Save never scans resources,
-recalculates counts or changes bucket files.
+existing descriptor resource counts and optional `buckets.csv` (item labels
+followed by non-negative numeric values, at most 1 MB). Both supplied column
+headers appear in the generated table. Resource `count` still requires a
+non-negative safe integer. Save never scans resources, recalculates counts or
+changes bucket files.
 The generated layout is title, name/Created-date subtitle, badges (including
 Version when supplied), then description paragraphs. Contributors and sources
 use lists; only resources and buckets use tables. The subtitle shows the supplied

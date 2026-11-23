@@ -15,9 +15,10 @@ pnpm add --save-exact --ignore-scripts \
 pnpm exec penjaga-validate /path/to/dataset
 ```
 
-The bucket API below describes unreleased source changes, not that v2.0.0 archive.
-To test current source locally, run `pnpm pack:validator` from the workspace root,
-then install the resulting archive with
+The flexible bucket API below is available in published v3.0.0 and later
+archives; v2.0.0 keeps its original `count`-only bucket schema. To test current
+source locally, run `pnpm pack:validator` from the workspace root, then install
+the resulting archive with
 `pnpm add --save-exact --ignore-scripts /absolute/path/to/the/archive.tgz`.
 
 Published releases through v1.1.0 retain their original package and CLI names.
@@ -81,8 +82,9 @@ const values = buckets.rows.map((row) => row[buckets.valueColumn]);
 longer guarantees a `count` property. Read the numeric field with
 `row[buckets.valueColumn]`. Existing label-plus-`count` CSV files still work,
 but do not assume that every numeric column is named `count`. These public type
-changes require a breaking release before consumer adoption. Resource metadata
-`count` remains a non-negative safe integer; this change applies only to buckets.
+changes shipped in v3.0.0; v2.0.0 consumers do not include the flexible bucket
+API. Resource metadata `count` remains a non-negative safe integer; this change
+applies only to buckets.
 
 ## Local repository API
 

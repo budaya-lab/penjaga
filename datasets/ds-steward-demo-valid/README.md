@@ -18,6 +18,7 @@ Synthetic records for demonstrating Steward metadata checks and resource counts.
 | json-records | JSON array records | records.json | json | 3 items |
 | jsonl-records | JSON Lines records | records.jsonl | jsonl | 2 items |
 | pdf-document | PDF document \(not countable\) | overview.pdf | pdf |  |
+| directory | A directory of data file | directory/ |  |  |
 
 ## Buckets
 
