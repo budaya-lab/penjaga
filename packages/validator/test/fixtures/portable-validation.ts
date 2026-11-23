@@ -33,5 +33,5 @@ process.stdout.write(JSON.stringify({
   errors: api.validateMetadata(data, policy),
   stage: api.getStage(data.keywords, policy),
   label: api.stageLabel(data.keywords, policy),
-  buckets: api.parseBuckets('year,count\n001,2\n'),
+  buckets: api.parseBuckets('year,score\n001,2.5\n'),
 }));

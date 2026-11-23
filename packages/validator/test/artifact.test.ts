@@ -36,6 +36,7 @@ test('packed API, types, policy and CLI work without workspace sources or runtim
     const data = readFileSync(new URL('./fixtures/datapackage.json', import.meta.url), 'utf8');
     writeFileSync(join(dataset, 'datapackage.json'), data);
     writeFileSync(join(dataset, 'input.csv'), 'value\nexample\n');
+    writeFileSync(join(dataset, 'buckets.csv'), 'year,score\n001,2.5\n');
     writeFileSync(join(root, 'consumer.mjs'), `
       import { readFileSync } from 'node:fs';
       import { validateMetadata, validatePolicy, getStage, stageLabel, parseBuckets } from '@penjaga/validator';
@@ -49,7 +50,7 @@ test('packed API, types, policy and CLI work without workspace sources or runtim
         repository: validateDataPackage(data, 'dataset'),
         stage: getStage(data.keywords, policy),
         label: stageLabel(data.keywords, policy),
-        buckets: parseBuckets('year,count\\n001,2\\n'),
+        buckets: parseBuckets('year,score\\n001,2.5\\n'),
       }));
     `);
 
@@ -60,20 +61,22 @@ test('packed API, types, policy and CLI work without workspace sources or runtim
       repository: [],
       stage: 'master',
       label: 'Master collection',
-      buckets: { labelColumn: 'year', rows: [{ year: '001', count: 2 }] },
+      buckets: { labelColumn: 'year', valueColumn: 'score', rows: [{ year: '001', score: 2.5 }] },
     });
 
     writeFileSync(join(root, 'consumer.mts'), `
       import { validateMetadata, parseBuckets } from '@penjaga/validator';
-      import type { DatasetPolicy, Buckets } from '@penjaga/validator';
+      import type { DatasetPolicy, BucketRow, Buckets } from '@penjaga/validator';
       import { validateDataPackage } from '@penjaga/validator/repository';
       import policy from '@penjaga/validator/policy' with { type: 'json' };
 
       const errors: string[] = validateMetadata({ name: 'example' }, policy);
       const local: string[] = validateDataPackage(null, '.');
-      const buckets: Buckets = parseBuckets('year,count\\n001,2');
+      const buckets: Buckets = parseBuckets('year,score\\n001,2.5');
+      const row: BucketRow = { year: '001', score: 2.5 };
+      const column: string = buckets.valueColumn;
       const version: DatasetPolicy['schemaVersion'] = 1;
-      void [errors, local, buckets, version];
+      void [errors, local, buckets, row, column, version];
     `);
     writeFileSync(join(root, 'tsconfig.json'), JSON.stringify({
       compilerOptions: {

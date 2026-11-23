@@ -63,8 +63,11 @@ revision/conflict detection: Save overwrites the descriptor currently on disk.
 Basic file permissions and ownership are retained, but ACLs and extended
 attributes are not preserved. After the descriptor is saved, passing metadata
 checks trigger `README.md` generation. The README includes supplied metadata,
-existing resource counts and optional `buckets.csv` (label plus `count`, at most
-1 MB). Save never scans resources, recalculates counts or changes bucket files.
+existing resource counts and optional `buckets.csv` (item labels followed by
+non-negative numeric values, at most 1 MB). Bucket values may be integers or
+floats, and both supplied column headers appear in the table. Resource `count`
+still requires a non-negative safe integer. Save never scans resources,
+recalculates counts or changes bucket files.
 The generated layout is title, name/Created-date subtitle, badges (including
 Version when supplied), then description paragraphs. Contributors and sources
 use lists; only resources and buckets use tables. The subtitle shows the supplied
