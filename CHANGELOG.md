@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.1.1](https://github.com/budaya-lab/penjaga/compare/v3.1.0...v3.1.1) (2026-11-23)
+
+
+### Bug Fixes
+
+* **steward:** omit hidden entries from directory counts ([ad2c734](https://github.com/budaya-lab/penjaga/commit/ad2c734b8bf0066ec0ef6f96d2ff114f1d32f7ea))
+* **steward:** omit hidden entries from directory counts ([3ace781](https://github.com/budaya-lab/penjaga/commit/3ace7812a1c719f27f850e6cf1aeaf8baefc5509))
+
 ## [3.1.0](https://github.com/budaya-lab/penjaga/compare/v3.0.0...v3.1.0) (2026-11-23)
 
 
