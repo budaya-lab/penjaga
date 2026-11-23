@@ -88,6 +88,7 @@ export async function inspectResource(root: string | undefined, name: string, re
         if (!initial.isDirectory() || await fs.realpath(folder) !== folder) throw new ResourceReadError(400, 'Directory links are not supported.');
         for await (const entry of await fs.opendir(folder)) {
           if (++entries > MAX_ENTRIES || Date.now() > deadline) throw new ResourceReadError(413, 'Directory count exceeds the 10,000-entry or 5-second limit.');
+          if (entry.name.startsWith('.')) continue;
           const child = join(folder, entry.name);
           const stat = await fs.lstat(child, { bigint: true });
           if (stat.isDirectory()) await visit(child, depth + 1);

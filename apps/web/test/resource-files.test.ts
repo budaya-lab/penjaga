@@ -28,10 +28,12 @@ test('counts data without returning contents, handles empty files and counts nes
   await fs.writeFile(join(directory, 'data.json'), '[1,2,3]');
   await fs.writeFile(join(directory, 'items.jsonl'), '{}\nnull\n');
   await fs.writeFile(join(directory, 'opaque.pdf'), Buffer.from([0xff]));
-  await fs.mkdir(join(directory, 'images.v2/nested'), { recursive: true });
-  await fs.writeFile(join(directory, 'images.v2/one.bin'), 'first secret');
-  await fs.writeFile(join(directory, 'images.v2/nested/.hidden'), 'second secret');
-  for (const [path, value, unit] of [['items.csv', 2, 'rows'], ['empty.tsv', 0, 'rows'], ['data.json', 3, 'items'], ['items.jsonl', 2, 'items'], ['images.v2/', 2, 'files']] as const) {
+  await fs.mkdir(join(directory, 'images.v2/nested/.hidden-directory'), { recursive: true });
+  await fs.writeFile(join(directory, 'images.v2/one.bin'), 'visible fixture content');
+  await fs.writeFile(join(directory, 'images.v2/.hidden-root'), 'hidden root file');
+  await fs.writeFile(join(directory, 'images.v2/nested/.hidden'), 'hidden fixture content');
+  await fs.writeFile(join(directory, 'images.v2/nested/.hidden-directory/visible.bin'), 'inside hidden directory');
+  for (const [path, value, unit] of [['items.csv', 2, 'rows'], ['empty.tsv', 0, 'rows'], ['data.json', 3, 'items'], ['items.jsonl', 2, 'items'], ['images.v2/', 1, 'files']] as const) {
     const result = await inspectResource(root, 'ds-test', path);
     assert.equal(result.status, 'counted');
     if (result.status === 'counted') { assert.equal(result.value, value); assert.equal(result.unit, unit); }
