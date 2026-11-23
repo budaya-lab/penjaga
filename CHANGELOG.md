@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.0.0](https://github.com/budaya-lab/penjaga/compare/v2.0.0...v3.0.0) (2026-11-23)
+
+
+### ⚠ BREAKING CHANGES
+
+* parseBuckets now returns valueColumn and BucketRow no longer guarantees a count property.
+
+### Features
+
+* accept arbitrary non-negative bucket metrics ([0526f3c](https://github.com/budaya-lab/penjaga/commit/0526f3ccbbaa58f0983630927c9392d8eb2c5367))
+
 ## [2.0.0](https://github.com/budaya-lab/penjaga/compare/v1.1.0...v2.0.0) (2026-11-20)
 
 
