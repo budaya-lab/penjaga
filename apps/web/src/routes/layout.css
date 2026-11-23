@@ -132,7 +132,7 @@
 }
 
 @layer components {
-	.readme-view { @apply min-w-0 max-w-prose text-sm leading-7 wrap-anywhere; }
+	.readme-view { @apply min-w-0 max-w-full text-sm leading-7 wrap-anywhere; }
 	.readme-view :is(h2, h3, h4, h5, h6) { @apply mt-6 mb-3 font-heading font-semibold; }
 	.readme-view h2 { @apply text-2xl; }
 	.readme-view h3 { @apply text-xl; }
@@ -148,7 +148,7 @@
 	.readme-view code { @apply bg-muted px-1 py-0.5 font-mono text-xs; }
 	.readme-view pre { @apply max-w-full overflow-x-auto border bg-muted p-4 leading-relaxed; }
 	.readme-view pre code { @apply p-0; }
-	.readme-view table { @apply block max-w-full overflow-x-auto border-collapse; }
+	.readme-view table { @apply block max-w-full border-collapse; }
 	.readme-view :is(th, td) { @apply border px-3 py-2 text-left; }
 	.readme-view th { @apply bg-muted font-semibold; }
 }

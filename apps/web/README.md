@@ -93,8 +93,16 @@ pnpm install --frozen-lockfile --ignore-scripts
 DATASET_ROOT="/absolute/path/to/datasets" pnpm --filter @penjaga/steward dev
 ```
 
-`DATASET_ROOT` must name the parent directory, not a dataset. The development
-server binds to loopback. For a built server:
+`DATASET_ROOT` must name the parent directory, not a dataset. To open the
+three included demo datasets from the repository root, run:
+
+```sh
+DATASET_ROOT="$PWD/datasets" pnpm --filter @penjaga/steward dev
+```
+
+The demos show valid countable CSV/JSON/JSONL resources plus an uncounted PDF,
+metadata issues and an unavailable descriptor. See [`datasets/README.md`](../../datasets/README.md)
+for details. The development server binds to loopback. For a built server:
 
 ```sh
 pnpm --filter @penjaga/steward build
