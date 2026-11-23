@@ -1,0 +1,41 @@
+{
+  "name": "ds-steward-demo-valid",
+  "title": "Steward demo: valid metadata",
+  "description": "Synthetic records for demonstrating Steward metadata checks and resource counts.",
+  "keywords": [
+    "task:steward-demo",
+    "project:validator-showcase",
+    "stage:master",
+    "synthetic"
+  ],
+  "resources": [
+    {
+      "name": "csv-records",
+      "title": "CSV records",
+      "path": "records.csv",
+      "format": "csv",
+      "count": 2
+    },
+    {
+      "name": "json-records",
+      "title": "JSON array records",
+      "path": "records.json",
+      "format": "json",
+      "count": 3
+    },
+    {
+      "name": "jsonl-records",
+      "title": "JSON Lines records",
+      "path": "records.jsonl",
+      "format": "jsonl",
+      "count": 2
+    },
+    {
+      "name": "pdf-document",
+      "title": "PDF document (not countable)",
+      "path": "overview.pdf",
+      "format": "pdf"
+    }
+  ],
+  "created": "2026-11-23T00:00:00+08:00"
+}
