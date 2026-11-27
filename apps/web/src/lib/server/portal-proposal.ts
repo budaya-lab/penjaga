@@ -1,6 +1,8 @@
+import { isDeepStrictEqual } from 'node:util';
 import { validateMetadata } from '@penjaga/validator';
 import policy from '@penjaga/validator/policy' with { type: 'json' };
 import { metadataObject } from '../metadata-json.ts';
+import { preservePortalFieldOrder } from '../portal-diff.ts';
 import { PortalError } from './portal-checkout.ts';
 
 export type PushedSource = { repository: string; id: number; private: boolean; sha: string; branch: string; metadata: Record<string, unknown> };
@@ -61,6 +63,8 @@ export function catalogueProposal(catalogue: string, source: PushedSource) {
   const summaries = oldResources.filter((resource) => resource.name === 'buckets' && resource.access !== 'restricted'
     && !listed.some((item) => item.name === resource.name));
   if (summaries.length > 1) throw new PortalError('Multiple public bucket summaries need manual catalogue review.');
+  // Keep the portal-only summary in its existing slot, not at the end of the dataset list.
+  for (const summary of summaries) listed.splice(oldResources.indexOf(summary), 0, summary);
   const licenses = data.licenses === undefined ? undefined : (data.licenses as Record<string, unknown>[]).map((license) => {
     const name = text(license.name, 80);
     let path: string | undefined;
@@ -87,7 +91,7 @@ export function catalogueProposal(catalogue: string, source: PushedSource) {
     sources: [
       ...sources,
       { title: source.private ? 'GitHub repository (sign in for access)' : 'GitHub repository', path: `https://github.com/${source.repository}`, access },
-    ], resources: [...listed, ...summaries],
+    ], resources: listed,
   };
   if (licenses === undefined) delete after.licenses; else after.licenses = licenses;
   if (data.version === undefined) delete after.version; else after.version = data.version;
@@ -98,11 +102,12 @@ export function catalogueProposal(catalogue: string, source: PushedSource) {
   }
   delete after.file;
   delete after.format;
-  if (before) entries[entries.indexOf(before)] = after; else entries.push(after);
-  const changed = JSON.stringify(before) !== JSON.stringify(after);
-  return { action: before ? 'update' as const : 'add' as const, before, after, changed,
+  const ordered = preservePortalFieldOrder(before, after);
+  if (before) entries[entries.indexOf(before)] = ordered; else entries.push(ordered);
+  const changed = !isDeepStrictEqual(before, ordered);
+  return { action: before ? 'update' as const : 'add' as const, before, after: ordered, changed,
     text: changed ? JSON.stringify(entries, null, 2) + '\n' : catalogue, branch: `chore/portal-${source.id}`,
-    warnings: ['Resources follow the dataset list and order, plus any existing public bucket summary not already listed. Bucket summary files are retained, not refreshed. Other portal-only resource entries are removed; no resource files are copied or deleted. Public downloads require a reviewed release mapping.',
-      ...(before && (before.access !== access || JSON.stringify(before.resources) !== JSON.stringify(after.resources)) ? ['Access or resource listings change. Review their public disclosure.'] : [])],
+    warnings: ['Resources follow the dataset list and order; any retained public bucket summary keeps its existing catalogue slot. Bucket summary files are retained, not refreshed. Other portal-only resource entries are removed; no resource files are copied or deleted. Public downloads require a reviewed release mapping.',
+      ...(before && (before.access !== access || !isDeepStrictEqual(before.resources, after.resources)) ? ['Access or resource listings change. Review their public disclosure.'] : [])],
   };
 }
