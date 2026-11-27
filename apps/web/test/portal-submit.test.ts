@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { test, type TestContext } from 'node:test';
 import { PortalSourceMismatch } from '../src/lib/server/portal-source.ts';
 import { portalOperation } from '../src/lib/server/portal-submit.ts';
+import { catalogueProposal } from '../src/lib/server/portal-proposal.ts';
 import type { Command } from '../src/lib/server/portal-checkout.ts';
 import { metadata, source, portalFixture } from './fixtures/portal.ts';
 
@@ -40,6 +41,27 @@ async function fixture(t: TestContext) {
   const dependencies = { run, readSource: async () => source };
   return { ...f, datasets, directory, events, dependencies };
 }
+
+test('field-order-only differences and a leading retained bucket cannot create a PR through direct confirmed submission', async (t) => {
+  const f = await fixture(t);
+  const entry = catalogueProposal('[]', source).after;
+  entry.resources = [
+    { name: 'buckets', path: 'ds-example-buckets.csv', format: 'csv', title: 'Public bucket summary' },
+    ...(entry.resources as Record<string, unknown>[]).map((resource) => Object.fromEntries(Object.entries(resource).reverse())),
+  ];
+  const catalogue = JSON.stringify([Object.fromEntries(Object.entries(entry).reverse())], null, 4) + '\n';
+  await fs.writeFile(join(f.upstream, 'datasets.json'), catalogue);
+  await f.git(['commit', '-am', 'Existing equivalent metadata']);
+  const preview = await portalOperation(f.datasets, 'ds-example', f.clone, { action: 'preview' }, f.dependencies);
+  if (preview.status !== 'preview') throw new Error('Expected preview');
+  assert.equal(preview.preview.changed, false);
+  f.events.length = 0;
+  const result = await portalOperation(f.datasets, 'ds-example', f.clone, { action: 'submit', confirmed: true, revision: preview.preview.revision }, f.dependencies);
+  assert.equal(result.status, 'unchanged');
+  assert.deepEqual(f.events, []);
+  assert.equal(await fs.readFile(join(f.clone, 'datasets.json'), 'utf8'), catalogue);
+  assert.equal((await f.git(['status', '--porcelain'], f.clone)).trim(), '');
+});
 
 test('a saved/pushed mismatch is an actionable state with a diff, not a generic failure or catalogue write', async (t) => {
   const f = await fixture(t);

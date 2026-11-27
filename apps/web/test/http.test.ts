@@ -43,6 +43,12 @@ function breadcrumb(html: string): string {
   return nav[0].replace(/<!--[\s\S]*?-->/g, '');
 }
 
+function jsonPreview(html: string): string {
+  const code = html.match(/<pre\b[^>]*><code>([\s\S]*?)<\/code><\/pre>/);
+  assert.ok(code, 'Expected a JSON code preview');
+  return code[1].replace(/<!--[\s\S]*?-->/g, '').replace(/<\/?span\b[^>]*>/g, '');
+}
+
 function tableRow(html: string, name: string): string {
   const row = [...html.matchAll(/<tr\b[^>]*>[\s\S]*?<\/tr>/g)]
     .find(([row]) => row.includes(`>${name}</a>`));
@@ -169,7 +175,11 @@ for (const mode of ['dev', 'built'] as const) {
       assert.ok(section[2].includes(`id="${section[1]}"`));
       assert.ok(section[2].includes(description), `Missing ${view} description`);
       assert.match(html, /aria-current="page"/);
-      if (view === 'datapackage') assert.match(html, /<div\b[^>]*role="textbox"[^>]*aria-readonly="true"[^>]*aria-multiline="true"[^>]*aria-label="Data Package JSON"[^>]*tabindex="0"/);
+      if (view === 'datapackage') {
+        assert.match(html, /<div\b[^>]*role="textbox"[^>]*aria-readonly="true"[^>]*aria-multiline="true"[^>]*aria-label="Data Package JSON"[^>]*tabindex="0"/);
+        assert.match(html, /data-json-token="punctuation"/);
+        assert.equal(jsonPreview(html), '{}');
+      }
     }
   });
 
@@ -280,7 +290,7 @@ for (const mode of ['dev', 'built'] as const) {
     assert.equal(response.status, 200);
     const html = (await response.text()).replace(/<!--[\s\S]*?-->/g, '');
     assert.match(html, /datapackage\.json/);
-    assert.match(html, /<pre[^>]*><code>\{invalid JSON/);
+    assert.match(jsonPreview(html), /^\{invalid JSON/);
     assert.match(html, /&lt;script(?:>|&gt;)not executable&lt;\/script(?:>|&gt;)/);
     assert.doesNotMatch(html, /<script>|<textarea|<form|outside marker/);
     assert.equal(html.includes(root), false);

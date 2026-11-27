@@ -31,6 +31,10 @@
 	--chart-3: oklch(0.438 0.017 39.3);
 	--chart-4: oklch(0.367 0.016 35.7);
 	--chart-5: oklch(0.268 0.011 36.5);
+	--syntax-key: #175a8a;
+	--syntax-string: #28613e;
+	--syntax-number: #714278;
+	--syntax-literal: #87420f;
 	--radius: 0.625rem;
 	--sidebar: oklch(0.986 0.002 67.8);
 	--sidebar-foreground: oklch(0.147 0.004 49.3);
@@ -43,6 +47,10 @@
 }
 
 .dark {
+	--syntax-key: #9ccfff;
+	--syntax-string: #aad8b4;
+	--syntax-number: #e3b9ec;
+	--syntax-literal: #f0c49f;
 	--background: oklch(0.147 0.004 49.3);
 	--foreground: oklch(0.986 0.002 67.8);
 	--card: oklch(0.214 0.009 43.1);

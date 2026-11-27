@@ -1,8 +1,77 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { catalogueProposal } from '../src/lib/server/portal-proposal.ts';
+import { portalEntryDiff } from '../src/lib/portal-diff.ts';
 
 import { metadata, source } from './fixtures/portal.ts';
+
+test('ignores object field order at the record and nested resource/source levels, preserving catalogue bytes', () => {
+  const entry = catalogueProposal('[]', source).after;
+  const reverse = (value: Record<string, unknown>) => Object.fromEntries(Object.entries(value).reverse());
+  const reordered = reverse({ ...entry,
+    resources: (entry.resources as Record<string, unknown>[]).map(reverse),
+    sources: (entry.sources as Record<string, unknown>[]).map(reverse),
+  });
+  const catalogue = JSON.stringify([reordered], null, 4) + '\n';
+  const plan = catalogueProposal(catalogue, source);
+  assert.equal(plan.changed, false);
+  assert.equal(plan.text, catalogue);
+  assert.ok(!plan.warnings.some((warning) => warning.startsWith('Access or resource listings change')));
+  const changed = catalogueProposal(catalogue, { ...source, metadata: { ...metadata, resources: [{ ...metadata.resources[0], count: 1 }] } });
+  assert.equal(changed.changed, true);
+});
+
+test('retained public buckets stay in their existing slot without inventing a change or diff', () => {
+  const resources = [...metadata.resources,
+    { ...metadata.resources[0], name: 'extra', title: 'Extra', path: 'extra.csv' },
+    { ...metadata.resources[0], name: 'other', title: 'Other', path: 'other.csv' },
+  ];
+  const current = { ...source, metadata: { ...metadata, resources } };
+  const entry = catalogueProposal('[]', current).after;
+  const bucket = { name: 'buckets', path: 'ds-example-buckets.csv', format: 'csv', title: 'Public bucket summary' };
+  for (const index of [0, 1, 2, 3]) {
+    const previous = (entry.resources as Record<string, unknown>[]).map((resource) => Object.fromEntries(Object.entries(resource).reverse()));
+    previous.splice(index, 0, bucket);
+    const catalogue = JSON.stringify([{ ...entry, resources: previous }], null, 4) + '\n';
+    const plan = catalogueProposal(catalogue, current);
+    assert.equal(plan.changed, false, `Bucket at index ${index} must not move`);
+    assert.equal(plan.text, catalogue);
+    assert.deepEqual(plan.after.resources, previous);
+    assert.ok(portalEntryDiff(plan.before, plan.after).every((line) => line.kind === 'context'));
+    assert.ok(!plan.warnings.some((warning) => warning.startsWith('Access or resource listings change')));
+    const changed = catalogueProposal(catalogue, { ...current, metadata: { ...current.metadata, resources: [{ ...resources[0], count: 1 }, ...resources.slice(1)] } });
+    assert.equal(changed.changed, true);
+    assert.deepEqual((changed.after.resources as unknown[])[index], bucket);
+    const expected = structuredClone(previous);
+    expected.find((resource) => resource.name === 'input')!.count = 1;
+    assert.equal(JSON.stringify(changed.after.resources), JSON.stringify(expected), 'Written resources must not reorder unrelated fields');
+    const changes = portalEntryDiff(changed.before, changed.after).filter((line) => line.kind !== 'context');
+    assert.equal(changes.length, 2);
+    assert.ok(changes.every((line) => line.text.includes('"count":')));
+  }
+});
+
+test('bucket retention preserves declared ordering and clamps its slot when resources are removed', () => {
+  const bucket = { name: 'buckets', path: 'summary.csv', format: 'csv', title: 'Reviewed summary' };
+  const extra = { ...metadata.resources[0], name: 'extra', title: 'Extra', path: 'extra.csv' };
+  const entry = catalogueProposal('[]', source).after;
+  const catalogue = JSON.stringify([{ ...entry, resources: [metadata.resources[0], bucket, extra] }]);
+  const current = { ...source, metadata: { ...metadata, resources: [extra, metadata.resources[0]] } };
+  const plan = catalogueProposal(catalogue, current);
+  assert.deepEqual((plan.after.resources as { name: string }[]).map((resource) => resource.name), ['extra', 'buckets', 'input']);
+  assert.deepEqual((plan.after.resources as unknown[])[1], bucket);
+  const shortened = catalogueProposal(JSON.stringify([{ ...entry, resources: [metadata.resources[0], extra, bucket] }]), source);
+  assert.deepEqual((shortened.after.resources as { name: string }[]).map((resource) => resource.name), ['input', 'buckets']);
+});
+
+test('resource array order remains a meaningful catalogue change', () => {
+  const resources = [...metadata.resources, { ...metadata.resources[0], name: 'extra', title: 'Extra', path: 'extra.csv' }];
+  const original = { ...source, metadata: { ...metadata, resources } };
+  const catalogue = catalogueProposal('[]', original).text;
+  const plan = catalogueProposal(catalogue, { ...original, metadata: { ...original.metadata, resources: [...resources].reverse() } });
+  assert.equal(plan.changed, true);
+  assert.deepEqual((plan.after.resources as { name: string }[]).map((resource) => resource.name), ['extra', 'input']);
+});
 
 test('adds a draft metadata-only record without inventing totals, dates or parents', () => {
   const plan = catalogueProposal('[]\n', source);
@@ -24,7 +93,7 @@ test('updates source fields and resources, preserving identity, publication, lin
   assert.equal(plan.action, 'update');
   for (const key of ['namespace', 'slug', 'draft', 'category', 'created', 'modified', 'derivedFrom'] as const) assert.deepEqual(plan.after[key], old[key]);
   assert.equal(plan.after.name, metadata.title);
-  assert.deepEqual(plan.after.resources, [...metadata.resources.map((resource) => ({ ...resource, access: 'restricted' })), bucket]);
+  assert.deepEqual(plan.after.resources, [bucket, ...metadata.resources.map((resource) => ({ ...resource, access: 'restricted' }))]);
   assert.equal(catalogueProposal(plan.text, source).changed, false);
 });
 

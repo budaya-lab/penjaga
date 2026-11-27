@@ -6,6 +6,8 @@
     import BucketChart from "$lib/components/bucket-chart.svelte";
     import MetadataForm from "$lib/components/metadata-form.svelte";
     import DatasetPanel from "$lib/components/dataset-panel.svelte";
+    import JsonSyntax from "$lib/components/json-syntax.svelte";
+    import { highlightJson } from "$lib/json-highlight.ts";
     import ReadmeBody from "$lib/components/readme-body.svelte";
     import PortalSubmission from "$lib/components/portal-submission.svelte";
     import * as Alert from "$lib/components/ui/alert/index.js";
@@ -44,6 +46,7 @@
             baseline?.metadataText ??
             (data.view === "datapackage" ? data.text : ""),
     );
+    let jsonTokens = $derived(highlightJson(jsonText));
     // Router loads change for each view; capture a metadata baseline only once per dataset.
     afterNavigate(() => {
         session = receiveMetadataSession(
@@ -224,7 +227,7 @@
         {/if}
         <div role="textbox" aria-readonly="true" aria-multiline="true" aria-label="Data Package JSON" tabindex="0"
             class="max-w-full overflow-x-auto rounded-md border bg-muted focus-visible:outline-2 focus-visible:outline-ring">
-            <pre class="min-w-max p-4 text-xs leading-relaxed"><code>{jsonText}</code></pre>
+            <pre class="min-w-max p-4 text-xs leading-relaxed"><code><JsonSyntax tokens={jsonTokens} /></code></pre>
         </div>
         </DatasetPanel>
     {/if}

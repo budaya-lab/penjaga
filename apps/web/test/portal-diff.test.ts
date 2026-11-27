@@ -1,10 +1,52 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { portalEntryDiff } from '../src/lib/portal-diff.ts';
+import { portalEntryDiff, preservePortalFieldOrder } from '../src/lib/portal-diff.ts';
 
 function reconstruct(lines: ReturnType<typeof portalEntryDiff>, side: 'before' | 'after') {
   return lines.filter((line) => line.kind !== (side === 'before' ? 'add' : 'remove')).map((line) => line.text).join('\n');
 }
+
+test('ignores reordered object fields recursively but still shows real values and array order changes', () => {
+  const before = { name: 'Same', resources: [{ name: 'one', details: { count: 0, title: 'First' } }, { name: 'two' }] };
+  const reordered = { resources: [{ details: { title: 'First', count: 0 }, name: 'one' }, { name: 'two' }], name: 'Same' };
+  assert.ok(portalEntryDiff(before, reordered).every((line) => line.kind === 'context'));
+  assert.ok(portalEntryDiff(before, { ...reordered, name: 'Changed' }).some((line) => line.kind === 'add' && line.text.includes('Changed')));
+  assert.ok(portalEntryDiff(before, { ...reordered, resources: [...reordered.resources].reverse() }).some((line) => line.kind !== 'context'));
+  assert.equal(reordered.resources[0].details?.count, 0);
+  assert.deepEqual(Object.keys(reordered), ['resources', 'name']);
+});
+
+test('matches resource field ordering by unique name, not shifted array position', () => {
+  const before = { resources: [
+    { name: 'buckets', path: 'summary.csv', format: 'csv', title: 'Summary' },
+    { name: 'input', title: 'Manifest', path: 'input.csv', count: 178, format: 'csv', access: 'restricted' },
+  ] };
+  const after = { resources: [
+    { name: 'input', path: 'input.csv', format: 'csv', title: 'Manifest', access: 'restricted', count: 178 },
+  ] };
+  const lines = portalEntryDiff(before, after);
+  // Removing a resource is meaningful; do not turn it into edits to its neighbour.
+  assert.deepEqual(JSON.parse(reconstruct(lines, 'after')), after);
+  assert.ok(lines.some((line) => line.kind === 'remove' && line.text.includes('buckets')));
+  assert.ok(!lines.some((line) => line.kind === 'add'));
+  for (const field of ['Manifest', '178', 'restricted']) {
+    assert.ok(!lines.some((line) => line.kind !== 'context' && line.text.includes(field)));
+  }
+});
+
+test('field alignment never drops duplicated or unnamed resources, or mutates either input', () => {
+  const before = { resources: [{ name: 'same', count: 0 }] };
+  for (const resources of [
+    [{ count: 1, name: 'same' }, { count: 2, name: 'same' }],
+    [null, 'unresolved', { count: 0 }],
+  ]) {
+    const after = { resources };
+    const original = JSON.stringify({ before, after });
+    assert.deepEqual(preservePortalFieldOrder(before, after), after);
+    assert.deepEqual(JSON.parse(reconstruct(portalEntryDiff(before, after), 'after')), after);
+    assert.equal(JSON.stringify({ before, after }), original);
+  }
+});
 
 test('shows changed lines with unchanged context and correct old/new line numbers', () => {
   const before = { name: 'Old', description: 'Same', count: 2 };

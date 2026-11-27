@@ -25,6 +25,9 @@ test('renders an accessible unified diff with escaped metadata and all-addition/
   const html = render(Diff, { props: { before, after } }).body.replace(/<!--[\s\S]*?-->/g, '');
   assert.match(html, /aria-label="Catalogue JSON diff"/);
   assert.match(html, /tabindex="0"/);
+  assert.doesNotMatch(html, /aria-hidden="true"/);
+  assert.match(html, /data-json-token="key"/);
+  assert.match(html, /data-json-token="string"/);
   assert.match(html, /1 added lines/);
   assert.match(html, /1 removed lines/);
   assert.match(html, /− .*Old/);
@@ -37,6 +40,14 @@ test('renders an accessible unified diff with escaped metadata and all-addition/
   const unchanged = render(Diff, { props: { before: after, after } }).body;
   assert.match(unchanged, /0 added lines/);
   assert.match(unchanged, /0 removed lines/);
+  const { default: Syntax } = await server.ssrLoadModule('/src/lib/components/json-syntax.svelte');
+  const { highlightJson } = await server.ssrLoadModule('/src/lib/json-highlight.ts');
+  const text = '{ "name": "<img src=x>", "count": 178, "ready": true, "missing": null }';
+  const highlighted = render(Syntax, { props: { tokens: highlightJson(text) } }).body.replace(/<!--[\s\S]*?-->/g, '');
+  assert.match(highlighted, /data-json-token="number"/);
+  assert.match(highlighted, /data-json-token="literal"/);
+  assert.doesNotMatch(highlighted, /<img\b|<script\b|<a\b/);
+  assert.equal(highlighted.replace(/<[^>]*>/g, ''), text.replace('<img src=x>', '&lt;img src=x>'));
   const { default: Gap } = await server.ssrLoadModule('/src/lib/components/portal-source-gap.svelte');
   const gap = render(Gap, { props: { metadataUrl: '/datasets/ds-example?view=metadata', source: {
     repository: 'example/ds-example', branch: 'metadata/review', sha: 'b'.repeat(40), saved: after, pushed: before,
