@@ -6,6 +6,7 @@
     import BucketChart from "$lib/components/bucket-chart.svelte";
     import MetadataForm from "$lib/components/metadata-form.svelte";
     import ReadmeBody from "$lib/components/readme-body.svelte";
+    import PortalSubmission from "$lib/components/portal-submission.svelte";
     import * as Alert from "$lib/components/ui/alert/index.js";
     import { Button } from "$lib/components/ui/button/index.js";
     import {
@@ -55,7 +56,7 @@
     }
     async function switchView(
         event: MouseEvent,
-        target: "readme" | "metadata" | "datapackage",
+        target: "readme" | "metadata" | "datapackage" | "portal",
     ) {
         if (
             !active ||
@@ -120,7 +121,18 @@
             onclick={(event) => switchView(event, "datapackage")}
             >datapackage.json</Button
         >
+        <Button
+            href={`${datasetUrl}?view=portal`}
+            variant={view === "portal" ? "secondary" : "ghost"}
+            aria-current={view === "portal" ? "page" : undefined}
+            onclick={(event) => switchView(event, "portal")}>Portal</Button
+        >
     </nav>
+    {#if view === "portal"}
+        {#key data.name}
+            <PortalSubmission endpoint={`${datasetUrl}/portal`} metadataUrl={`${datasetUrl}?view=metadata`} blocked={!!active?.error || !!draft?.dirty} />
+        {/key}
+    {/if}
     {#if baseline}
         {#key baseline.name}
             <div hidden={view !== "metadata"}>
@@ -138,6 +150,9 @@
                         {draft}
                         reloadUrl={`${datasetUrl}?view=metadata`}
                         saveUrl={`${datasetUrl}/save`}
+                        commitUrl={`${datasetUrl}/commit`}
+                        gitUrl={`${datasetUrl}/git`}
+                        branchState={baseline.gitState}
                         datasetId={baseline.name}
                         ondraft={updateDraft}
                     />
