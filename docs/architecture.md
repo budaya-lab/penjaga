@@ -34,6 +34,12 @@ their independent metadata status.
 Dataset detail defaults to README; Metadata and `datapackage.json` are separate
 views. README, Metadata, JSON and Portal share a semantic section/header layout
 and one content width; navigation still preserves the dataset-scoped draft.
+JSON and diff previews share escaped syntax tokens from the installed
+`jsonc-parser` scanner. Raw lexemes preserve whitespace, escapes and numeric
+spelling, including malformed read-only input. A 20,000-token highlighting
+budget keeps the complete remainder as plain text. No HTML injection or
+additional dependency is used; diffs retain change markers/backgrounds without
+line-number columns.
 The reader accepts only discovered datasets and the fixed filenames
 `README.md`, `datapackage.json` and optional `buckets.csv`. The README view parses
 buckets with the shared parser and shows a local shadcn-svelte/LayerChart bar
@@ -142,7 +148,11 @@ supplied totals; absent optional values remove stale catalogue values. Source
 links must be credential-free HTTPS without queries/fragments. Private resource paths stay
 metadata-only; counts are supplied, not inferred. Resource membership and order
 come from the pushed descriptor, with existing public bucket summaries retained
-as an approved exception when not already listed. Other portal-only listings
+as an approved exception when not already listed. A retained summary keeps its
+existing catalogue slot, clamped to the end if the list becomes shorter; it is
+not unconditionally appended. Object field order is not a semantic change.
+Both the preview and written proposal preserve existing field order, matching
+resources by unique name rather than array index. Other portal-only listings
 are removed; a declared bucket resource is not duplicated. Resource metadata is replaced, not merged with
 stale portal values. No resource files are copied or deleted. Public download
 updates keep reviewed release URLs for listed resources; new or changed public

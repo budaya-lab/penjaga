@@ -33,7 +33,7 @@ section layout rather than a separate card treatment.
   changes** writes the draft to the dataset's existing descriptor and generates
   its README when metadata checks pass. Reset remains
   disabled; direct JSON editing and dataset creation are not implemented.
-- **datapackage.json** displays the saved JSON as escaped text unless Metadata
+- **datapackage.json** displays the saved JSON as escaped, syntax-highlighted text unless Metadata
   has been opened in the current page session, in which case it previews the
   synchronized draft. Normal JSON serialization may change whitespace, escapes
   and number notation. Editing requires strict object JSON with unique keys and is
@@ -155,8 +155,23 @@ mismatch is an expected **needs push** state, not a generic failed action: it sh
 the actual repository/branch/pushed commit, a GitHub-versus-saved diff and an
 **Open Metadata to commit & push** link. No catalogue setup/write is attempted
 until those metadata snapshots match. Real errors identify source verification,
-portal setup, validation, proposal push or PR creation, with a next action. The diff marks added/removed lines, shows unchanged context and line
-numbers, and can be focused for keyboard scrolling. During submission the page
+portal setup, validation, proposal push or PR creation, with a next action. The
+diff marks added/removed lines with +/− and background highlighting, shows
+unchanged context and uses the same JSON syntax colours as the JSON view,
+without line-number columns. Both previews support keyboard scrolling. Syntax
+highlighting uses the existing JSON scanner and escaped text, not injected HTML;
+it never validates, rewrites or truncates the content. Highlighting is limited
+to 20,000 scanner tokens per preview (shared across diff lines); any remainder
+stays visible as plain text. Object field order is ignored
+at every level, both in the preview and when deciding whether a PR is needed.
+Dataset resource order remains significant. Retained portal-only public bucket
+summaries keep their existing catalogue slot (or the end if the list becomes
+shorter). Resource fields align by unique name, not array index, so an insertion
+or removal does not make an unchanged neighbour look edited. Real updates also
+keep existing object field order in the written proposal. Order-only object
+field differences keep catalogue bytes unchanged and cannot create a PR,
+including through direct submission.
+During submission the page
 uses a busy cursor and the action reads **Submitting…**; both reset when the
 request finishes or the tab is left.
 No portal code or workflow changes are needed. Save remains local; it never
