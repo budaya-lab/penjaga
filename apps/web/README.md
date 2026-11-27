@@ -3,9 +3,18 @@
 A local SvelteKit app for datasets under `DATASET_ROOT`. It discovers
 immediate `ds-*` directories, shows metadata status, and opens each dataset's
 README by default. Directories without a descriptor remain visible. The dashboard
-supports search and metadata-status filters.
+supports search and metadata-status filters. Its Branch and Git status columns
+show the current branch, saved metadata/generated README changes, locally known
+unpushed commits and missing upstream tracking. These read-only checks never
+fetch source history or scan research files. Unavailable Git state does not hide
+the dataset or change its metadata status. Refresh reloads both statuses.
 
 ## Views
+
+All dataset views share one content width, section heading, description and
+spacing. Read-only previews scroll within their content area; Metadata keeps its
+form navigation and explicit Save/push actions. Portal review uses the same
+section layout rather than a separate card treatment.
 
 - **README** renders Markdown as escaped text and allowlisted elements. Embedded
   HTML and images are disabled. Only credential-free HTTPS links are clickable.

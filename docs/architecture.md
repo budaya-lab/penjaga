@@ -25,9 +25,16 @@ authority. API details and release procedures are in the
 
 The SvelteKit app runs locally against an explicit `DATASET_ROOT` parent. Server
 loads discover immediate `ds-*` directories. The dashboard returns folder names,
-metadata status and allowlisted summary values, not descriptor text or paths.
+metadata status, allowlisted summary values and read-only metadata Git state,
+not descriptor text or private resource paths. Git state reuses the detail
+view's safe branch inspector: current branch, changes to `datapackage.json` and
+marked generated `README.md`, and ahead counts from local tracking refs. It does
+not fetch, refresh the index or scan research files. Git-unavailable rows retain
+their independent metadata status.
 Dataset detail defaults to README; Metadata and `datapackage.json` are separate
-views. The reader accepts only discovered datasets and the fixed filenames
+views. README, Metadata, JSON and Portal share a semantic section/header layout
+and one content width; navigation still preserves the dataset-scoped draft.
+The reader accepts only discovered datasets and the fixed filenames
 `README.md`, `datapackage.json` and optional `buckets.csv`. The README view parses
 buckets with the shared parser and shows a local shadcn-svelte/LayerChart bar
 chart and values table, capped at 100 rows in file order. Missing buckets are
