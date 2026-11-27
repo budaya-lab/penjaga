@@ -5,6 +5,7 @@
     import { page } from "$app/state";
     import BucketChart from "$lib/components/bucket-chart.svelte";
     import MetadataForm from "$lib/components/metadata-form.svelte";
+    import DatasetPanel from "$lib/components/dataset-panel.svelte";
     import ReadmeBody from "$lib/components/readme-body.svelte";
     import PortalSubmission from "$lib/components/portal-submission.svelte";
     import * as Alert from "$lib/components/ui/alert/index.js";
@@ -97,7 +98,7 @@
     <title>{data.name} — Dataset Steward</title>
 </svelte:head>
 
-<section class="flex min-w-0 flex-col gap-4">
+<section class="flex w-full min-w-0 max-w-3xl flex-col gap-4" data-form-style="outlined">
     <h1 class="font-heading text-3xl font-semibold wrap-anywhere">
         {data.name}
     </h1>
@@ -136,6 +137,7 @@
     {#if baseline}
         {#key baseline.name}
             <div hidden={view !== "metadata"}>
+                <DatasetPanel title="Metadata" description="Edit locally, then save your changes. Commit & push and portal review are separate actions.">
                 {#if draft}
                     <MetadataForm
                         {...baseline.overview}
@@ -173,10 +175,12 @@
                         </ul>
                     {/if}
                 {/if}
+                </DatasetPanel>
             </div>
         {/key}
     {/if}
     {#if view === "readme" && data.view === "readme"}
+        <DatasetPanel title="README" description="Read-only README.md. Embedded HTML and images are disabled. Only credential-free HTTPS links are clickable.">
         {#if data.readme.status === "unavailable"}
             <Alert.Root>
                 <Alert.Title>README unavailable</Alert.Title>
@@ -195,10 +199,6 @@
                     >
                 </Alert.Root>
             {/if}
-            <p class="text-xs text-muted-foreground">
-                Read-only README.md. Embedded HTML and image loading are
-                disabled. Only credential-free HTTPS links are clickable.
-            </p>
             {#if data.readme.empty}
                 <p>README.md is empty.</p>
             {:else}
@@ -213,20 +213,19 @@
                 <Alert.Description>{data.buckets.message}</Alert.Description>
             </Alert.Root>
         {/if}
+        </DatasetPanel>
     {:else if view === "datapackage"}
-        <h2 class="font-heading text-xl font-semibold">datapackage.json</h2>
-        <p>
-            Read-only JSON preview. Metadata edits appear here without saving.
-        </p>
+        <DatasetPanel title="datapackage.json" description="Read-only JSON preview. Metadata edits appear here without saving.">
         {#if active?.error}
             <p role="alert" class="text-sm text-destructive">
                 Some form edits could not be represented: {active.error} This shows
                 the last representable draft. Return to Metadata to resolve them.
             </p>
         {/if}
-        <pre
-            class="max-w-full overflow-x-auto border bg-muted p-4 text-xs leading-relaxed"><code
-                >{jsonText}</code
-            ></pre>
+        <div role="textbox" aria-readonly="true" aria-multiline="true" aria-label="Data Package JSON" tabindex="0"
+            class="max-w-full overflow-x-auto rounded-md border bg-muted focus-visible:outline-2 focus-visible:outline-ring">
+            <pre class="min-w-max p-4 text-xs leading-relaxed"><code>{jsonText}</code></pre>
+        </div>
+        </DatasetPanel>
     {/if}
 </section>

@@ -293,7 +293,7 @@
         aria-busy={checkState.pending}
         class="scroll-mt-28 text-sm"
     >
-        <h2 class="mb-2 text-base font-medium">Metadata checks</h2>
+        <h3 class="mb-2 text-base font-medium">Metadata checks</h3>
         <p class="mb-2 text-xs text-muted-foreground">
             Checks inspect the JSON draft 500 ms after edits. Changes are not saved.
         </p>

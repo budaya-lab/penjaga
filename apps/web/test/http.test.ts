@@ -149,6 +149,30 @@ for (const mode of ['dev', 'built'] as const) {
     assert.deepEqual(await snapshot(root), before);
   });
 
+  test(`${mode}: gives each dataset view a labelled section with a heading and description`, async (t) => {
+    const root = await fixture(t);
+    const directory = join(root, 'ds-example');
+    await fs.mkdir(directory);
+    await fs.writeFile(join(directory, 'datapackage.json'), '{}');
+    await fs.writeFile(join(directory, 'README.md'), '# Example\n\nSupplied dataset documentation.\n');
+    const { url } = await serve(t, mode, root);
+    for (const [view, heading, description] of [
+      ['readme', 'README', 'Read-only README.md.'],
+      ['metadata', 'Metadata', 'Edit locally, then save your changes.'],
+      ['datapackage', 'datapackage.json', 'Read-only JSON preview.'],
+      ['portal', 'Portal submission', 'Save locally, push to GitHub, then review the portal change.'],
+    ]) {
+      const html = (await (await fetch(`${url}/datasets/ds-example?view=${view}`)).text()).replace(/<!--[\s\S]*?-->/g, '');
+      const section = [...html.matchAll(/<section\b[^>]*aria-labelledby="([^"]+)"[^>]*>([\s\S]*)/g)]
+        .find(([, , content]) => content.includes(`>${heading}</h2>`));
+      assert.ok(section, `Missing labelled ${view} section`);
+      assert.ok(section[2].includes(`id="${section[1]}"`));
+      assert.ok(section[2].includes(description), `Missing ${view} description`);
+      assert.match(html, /aria-current="page"/);
+      if (view === 'datapackage') assert.match(html, /<div\b[^>]*role="textbox"[^>]*aria-readonly="true"[^>]*aria-multiline="true"[^>]*aria-label="Data Package JSON"[^>]*tabindex="0"/);
+    }
+  });
+
   test(`${mode}: offers explicit portal preview and protects portal actions without touching data`, async (t) => {
     const root = await fixture(t);
     await fs.mkdir(join(root, 'ds-example'));

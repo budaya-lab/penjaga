@@ -4,7 +4,7 @@
   import PortalSourceGap from '$lib/components/portal-source-gap.svelte';
   import { Button } from '$lib/components/ui/button/index.js';
   import * as Alert from '$lib/components/ui/alert/index.js';
-  import * as Card from '$lib/components/ui/card/index.js';
+  import DatasetPanel from '$lib/components/dataset-panel.svelte';
   import * as Field from '$lib/components/ui/field/index.js';
   import { Checkbox } from '$lib/components/ui/checkbox/index.js';
   import { isPortalStep, readPortalResponse, type PortalPreview, type PortalResult, type PortalSourceDifference, type PortalStep } from '$lib/portal.ts';
@@ -74,17 +74,13 @@
   }
 </script>
 
-<Card.Root aria-busy={busy} data-portal-submitting={pending === 'submit'}>
-  <Card.Header>
-    <Card.Title>Portal submission</Card.Title>
-    <Card.Description>Save locally, push to GitHub, then review the portal change. A saved file is not necessarily the version on GitHub. Nothing is merged automatically.</Card.Description>
-    <Card.Action>
+<div data-portal-submitting={pending === 'submit'} data-form-style="outlined">
+<DatasetPanel title="Portal submission" description="Save locally, push to GitHub, then review the portal change. Nothing is merged automatically." {busy}>
+    {#snippet actions()}
       <Button type="button" variant="outline" disabled={busy || blocked} onclick={() => request('preview')}>
         {pending === 'preview' ? 'Checking…' : difference || error ? 'Check again' : 'Refresh preview'}
       </Button>
-    </Card.Action>
-  </Card.Header>
-  <Card.Content class="flex min-w-0 flex-col gap-4">
+    {/snippet}
     <ol aria-label="Portal submission readiness" class="flex list-decimal flex-col gap-2 pl-5 text-sm">
       <li><strong>Save metadata:</strong> {blocked ? 'Action needed — there are unsaved or unresolved edits.' : 'Saved on disk.'}</li>
       <li><strong>Push to GitHub:</strong> {blocked ? 'Waiting for Save.' : difference ? `Action needed — ${difference.branch} has different metadata.` : pushedVerified ? 'Verified for this preview.' : busy ? 'Checking the pushed branch…' : 'Not verified yet.'}</li>
@@ -115,10 +111,14 @@
       {#if result.status === 'submitted'}<Button href={result.url} variant="outline" target="_blank" rel="noopener noreferrer">Open portal PR</Button>{/if}
     {/if}
     {#if preview && !blocked}
-      <h2 class="font-heading text-lg font-semibold">{preview.action === 'add' ? 'Add to portal' : 'Update portal'}: review changes</h2>
-      <p class="text-sm wrap-anywhere">Source: {preview.repository} · branch <code>{preview.branch}</code> · pushed metadata <code>{preview.sha.slice(0, 8)}</code></p>
+      <h3 class="font-heading text-lg font-semibold">{preview.action === 'add' ? 'Add to portal' : 'Update portal'}: review changes</h3>
+      <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+        <dt class="text-muted-foreground">Repository</dt><dd class="min-w-0 wrap-anywhere">{preview.repository}</dd>
+        <dt class="text-muted-foreground">Branch</dt><dd class="min-w-0 wrap-anywhere">{preview.branch}</dd>
+        <dt class="text-muted-foreground">Pushed commit</dt><dd>{preview.sha.slice(0, 8)}</dd>
+      </dl>
       <section aria-label="Portal content" class="flex min-w-0 flex-col gap-2">
-        <h3 class="font-heading text-lg font-semibold wrap-anywhere">{String(preview.after.name ?? '')}</h3>
+        <h4 class="font-heading text-lg font-semibold wrap-anywhere">{String(preview.after.name ?? '')}</h4>
         <p class="text-sm text-muted-foreground wrap-anywhere">{String(preview.after.namespace ?? '')} / {String(preview.after.slug ?? '')}</p>
         <p class="whitespace-pre-wrap wrap-anywhere">{String(preview.after.description ?? '')}</p>
       </section>
@@ -135,13 +135,15 @@
             <Field.Label for={`${id}-confirm`}>I reviewed these changes and approve their public disclosure.</Field.Label>
           </Field.Field>
         </Field.Group>
-        <Button type="button" disabled={busy || !confirmed} onclick={() => request('submit')}>{pending === 'submit' ? 'Submitting…' : 'Create / update portal PR'}</Button>
+        <div class="flex flex-wrap items-center gap-2 border-t pt-3">
+          <Button type="button" disabled={busy || !confirmed} onclick={() => request('submit')}>{pending === 'submit' ? 'Submitting…' : 'Create / update portal PR'}</Button>
+        </div>
       {:else}
         <p role="status" class="text-sm">The portal already contains this metadata. No PR is needed.</p>
       {/if}
     {/if}
-  </Card.Content>
-</Card.Root>
+</DatasetPanel>
+</div>
 
 <style>
   :global(body:has([data-portal-submitting="true"])),
