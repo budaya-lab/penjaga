@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.4.0](https://github.com/budaya-lab/penjaga/compare/v3.3.0...v3.4.0) (2026-11-27)
+
+
+### Features
+
+* **steward:** highlight JSON previews and simplify diffs ([4675fa6](https://github.com/budaya-lab/penjaga/commit/4675fa666a2c67b41a00114e5d57e20eb6943ce8))
+
+
+### Bug Fixes
+
+* **portal:** keep resource diffs stable and highlight JSON ([6cf9a93](https://github.com/budaya-lab/penjaga/commit/6cf9a93f88fd8e44fdd87198bb6fc029806fdbb2))
+* **portal:** preserve bucket position and align resource fields ([335b1c1](https://github.com/budaya-lab/penjaga/commit/335b1c1cd536c648571c923c52a3d59cbb485dbd))
+
 ## [3.3.0](https://github.com/budaya-lab/penjaga/compare/v3.2.0...v3.3.0) (2026-11-27)
 
 
