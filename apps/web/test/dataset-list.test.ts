@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -40,8 +41,9 @@ test('lists sorted passed, issue and unavailable statuses without hiding incompl
     ['ds-invalid', 'issues'], ['ds-missing', 'unavailable'],
     ['ds-unsafe', 'unavailable'], ['ds-valid', 'passed'],
   ]);
-  assert.deepEqual(rows[0], { name: 'ds-invalid', status: 'issues', issueCount: 1, summary: null });
-  assert.deepEqual(rows[3], { name: 'ds-valid', status: 'passed', issueCount: 0, summary: [
+  assert.deepEqual(rows[0], { name: 'ds-invalid', status: 'issues', issueCount: 1, summary: null, git: rows[0].git });
+  assert.ok(rows.every((row) => row.git.status === 'unavailable'));
+  assert.deepEqual(rows[3], { name: 'ds-valid', status: 'passed', issueCount: 0, git: rows[3].git, summary: [
     { label: 'Title', values: ['Example'] }, { label: 'Creators', values: [] },
     { label: 'Task', values: ['example'] }, { label: 'Project', values: ['example'] },
     { label: 'Stage', values: ['master'] },
@@ -96,6 +98,41 @@ test('refreshes statuses after a descriptor is fixed', async (t) => {
   await fs.writeFile(path, valid);
   assert.equal((await listDatasets(root))[0].status, 'passed');
   assert.equal(await fs.readFile(path, 'utf8'), valid);
+});
+
+test('lists current branches, metadata changes and local ahead counts without changing repositories', async (t) => {
+  const root = await fixture(t);
+  const path = await dataset(root, 'ds-example', valid);
+  const directory = join(root, 'ds-example');
+  function git(...args: string[]) {
+    const result = spawnSync('git', ['-c', 'core.hooksPath=/dev/null', '-c', 'commit.gpgsign=false', ...args], { cwd: directory, encoding: 'utf8', timeout: 5000 });
+    assert.equal(result.status, 0, result.stderr);
+    return result.stdout;
+  }
+  git('init', '-b', 'feat/metadata');
+  git('config', 'user.name', 'Fixture');
+  git('config', 'user.email', 'fixture@example.invalid');
+  git('add', 'datapackage.json');
+  git('commit', '-m', 'Initial metadata');
+  assert.deepEqual((await listDatasets(root))[0].git, { status: 'ready', branch: 'feat/metadata', changes: [], ahead: null });
+  git('remote', 'add', 'origin', 'https://github.com/example/ds-example.git');
+  git('update-ref', 'refs/remotes/origin/feat/metadata', 'HEAD');
+  git('branch', '--set-upstream-to=origin/feat/metadata');
+  assert.deepEqual((await listDatasets(root))[0].git, { status: 'ready', branch: 'feat/metadata', changes: [], ahead: 0 });
+  await fs.writeFile(path, valid + '\n');
+  assert.deepEqual((await listDatasets(root))[0].git, { status: 'ready', branch: 'feat/metadata', changes: ['datapackage.json'], ahead: 0 });
+  git('commit', '-am', 'Update metadata');
+  // A resource symlink must never be followed by dashboard Git inspection.
+  await fs.symlink(join(root, 'private-missing-target'), join(directory, 'research.csv'));
+  const index = await fs.readFile(join(directory, '.git/index'));
+  assert.deepEqual((await listDatasets(root))[0].git, { status: 'ready', branch: 'feat/metadata', changes: [], ahead: 1 });
+  assert.deepEqual(await fs.readFile(join(directory, '.git/index')), index);
+  assert.equal(await fs.readFile(path, 'utf8'), valid + '\n');
+  git('checkout', '--detach');
+  const detached = (await listDatasets(root))[0];
+  assert.equal(detached.status, 'passed');
+  assert.equal(detached.git.status, 'unavailable');
+  assert.equal(JSON.stringify(detached.git).includes(root), false);
 });
 
 test('preserves root failures and unexpected inspection errors instead of inventing statuses', async (t) => {

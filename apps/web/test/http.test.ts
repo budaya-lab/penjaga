@@ -944,7 +944,7 @@ for (const mode of ['dev', 'built'] as const) {
     assert.match(html, /aria-label="Dataset views"/);
     assert.match(html, /<table\b/);
     assert.match(html, /<caption[^>]*>Showing 3 of 3 datasets/);
-    for (const heading of ['Dataset', 'Status', 'Task', 'Project', 'Stage', 'Creators']) {
+    for (const heading of ['Dataset', 'Metadata', 'Branch', 'Git status', 'Task', 'Project', 'Stage', 'Creators']) {
       assert.match(html, new RegExp(`<th[^>]*>${heading}</th>`));
     }
     assert.match(html, /&lt;b(?:>|&gt;)Supplied title&lt;\/b(?:>|&gt;)/);
@@ -996,6 +996,21 @@ for (const mode of ['dev', 'built'] as const) {
       assert.equal((await invalid.text()).includes(root), false);
     }
     assert.deepEqual(await snapshot(base), before);
+  });
+
+  test(`${mode}: shows branch and Git status in dataset rows`, async (t) => {
+    const root = await fixture(t);
+    const directory = join(root, 'ds-example');
+    await fs.mkdir(directory);
+    await fs.writeFile(join(directory, 'datapackage.json'), '{}');
+    const initialized = spawnSync('git', ['init', '-b', 'feat/metadata'], { cwd: directory, encoding: 'utf8' });
+    assert.equal(initialized.status, 0);
+    const { url } = await serve(t, mode, root);
+    const listing = (await (await fetch(url)).text()).replace(/<!--[\s\S]*?-->/g, '');
+    assert.match(listing, /<th\b[^>]*>Branch<\/th>/);
+    assert.match(listing, /<th\b[^>]*>Git status<\/th>/);
+    assert.match(tableRow(listing, 'ds-example'), /feat\/metadata/);
+    assert.match(tableRow(listing, 'ds-example'), /1 changed file; no upstream/);
   });
 
   test(`${mode}: distinguishes empty roots from failed reads`, async (t) => {

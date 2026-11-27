@@ -3,15 +3,15 @@ import { test } from 'node:test';
 import { datasetView, DatasetFilterError, type DatasetStatus } from '../src/lib/server/dataset-list.ts';
 
 const rows: DatasetStatus[] = [
-  { name: 'ds-a', status: 'passed', issueCount: 0, summary: [
+  { name: 'ds-a', git: { status: 'ready', branch: 'main', changes: [], ahead: 0 }, status: 'passed', issueCount: 0, summary: [
     { label: 'Title', values: ['Supplied title <&>'] },
     { label: 'Task', values: ['classification', 'transcription'] },
     { label: 'Project', values: ['example'] },
     { label: 'Stage', values: ['curated'] },
     { label: 'Creators', values: ['Alice', 'Bob'] },
   ] },
-  { name: 'ds-b', status: 'issues', issueCount: 3, summary: null },
-  { name: 'ds-c', status: 'unavailable', message: 'This dataset has no datapackage.json.', summary: null },
+  { name: 'ds-b', git: { status: 'unavailable', message: 'Git unavailable.' }, status: 'issues', issueCount: 3, summary: null },
+  { name: 'ds-c', git: { status: 'unavailable', message: 'Git unavailable.' }, status: 'unavailable', message: 'This dataset has no datapackage.json.', summary: null },
 ];
 
 test('counts all metadata statuses independently of search and status filters', () => {

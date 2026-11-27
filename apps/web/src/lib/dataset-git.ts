@@ -11,6 +11,15 @@ export function readDatasetBranch(value: unknown): DatasetBranch {
   throw new Error('Could not read dataset Git status. Refresh its status before committing.');
 }
 
+export function datasetGitStatus(state: DatasetBranch): string {
+  if (state.status === 'unavailable') return 'Unavailable';
+  const files = state.changes.length;
+  const parts = [files ? `${files} changed file${files === 1 ? '' : 's'}` : 'No file changes'];
+  if (state.ahead === null) parts.push('no upstream');
+  else if (state.ahead > 0) parts.push(`${state.ahead} unpushed commit${state.ahead === 1 ? '' : 's'}`);
+  return parts.join('; ');
+}
+
 export function hasDatasetChanges(state: DatasetBranch | undefined): boolean {
   return state?.status === 'ready' && (state.changes.length > 0 || state.ahead === null || state.ahead > 0);
 }
