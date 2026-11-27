@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.3.0](https://github.com/budaya-lab/penjaga/compare/v3.2.0...v3.3.0) (2026-11-27)
+
+
+### Features
+
+* **steward:** add explicit dataset and portal publishing workflows ([006aa54](https://github.com/budaya-lab/penjaga/commit/006aa54429c622b8926e7bed7ba16b13e83177f1))
+* **steward:** commit and push saved dataset metadata ([1d054d8](https://github.com/budaya-lab/penjaga/commit/1d054d8dc79277e03be555dd0df8f9fac60df95d))
+* **steward:** guide metadata publishing with explicit workflow states ([79bf8aa](https://github.com/budaya-lab/penjaga/commit/79bf8aa4465fbed3ae9037c69d76f0c79322d5b1))
+* **steward:** prepare source-verified portal proposals ([ddfbab8](https://github.com/budaya-lab/penjaga/commit/ddfbab875bf75d53466db840a9b16bd0d25713fb))
+* **steward:** show dataset branch and metadata Git status ([3df13fc](https://github.com/budaya-lab/penjaga/commit/3df13fc58ca0e3b53379cd891f7bb0f1a800fcd7))
+* **steward:** submit reviewed portal catalogue pull requests ([9e237c3](https://github.com/budaya-lab/penjaga/commit/9e237c3aa4f8f53cb17599fe83847d8897a78c4a))
+
 ## [3.2.0](https://github.com/budaya-lab/penjaga/compare/v3.1.1...v3.2.0) (2026-11-23)
 
 
