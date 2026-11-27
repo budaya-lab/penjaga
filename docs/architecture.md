@@ -25,9 +25,16 @@ authority. API details and release procedures are in the
 
 The SvelteKit app runs locally against an explicit `DATASET_ROOT` parent. Server
 loads discover immediate `ds-*` directories. The dashboard returns folder names,
-metadata status and allowlisted summary values, not descriptor text or paths.
+metadata status, allowlisted summary values and read-only metadata Git state,
+not descriptor text or private resource paths. Git state reuses the detail
+view's safe branch inspector: current branch, changes to `datapackage.json` and
+marked generated `README.md`, and ahead counts from local tracking refs. It does
+not fetch, refresh the index or scan research files. Git-unavailable rows retain
+their independent metadata status.
 Dataset detail defaults to README; Metadata and `datapackage.json` are separate
-views. The reader accepts only discovered datasets and the fixed filenames
+views. README, Metadata, JSON and Portal share a semantic section/header layout
+and one content width; navigation still preserves the dataset-scoped draft.
+The reader accepts only discovered datasets and the fixed filenames
 `README.md`, `datapackage.json` and optional `buckets.csv`. The README view parses
 buckets with the shared parser and shows a local shadcn-svelte/LayerChart bar
 chart and values table, capped at 100 rows in file order. Missing buckets are
@@ -82,6 +89,87 @@ resources/buckets keep comparison tables. Version joins the badge row when
 supplied. The viewer suppresses Penjaga's known bookkeeping markers (and the legacy generated header) and
 honors Markdown's hidden tight-list paragraph tokens. Portable validation remains read-only. See
 [Save usage](../apps/web/README.md#save).
+
+## Explicit dataset Git operations
+
+The Metadata footer displays the current dataset branch, saved-file changes and
+locally unpushed commit count. A read-only no-store `/datasets/[name]/git` endpoint
+refreshes this state after Save/push, without network fetches, index writes,
+rename detection or clean filters. Clean datasets disable commit/push. The editable
+predefined message appears only in a native confirmation dialog, not the form. A separate same-origin POST to `/datasets/[name]/commit` commits
+and pushes only saved metadata and a marked generated README. It rechecks the
+submitted document against the saved descriptor and shared metadata checks.
+Path-limited Git commits preserve unrelated index/worktree changes. Ordinary
+resource bytes, bucket data and source history are not read or fetched; hooks
+are disabled and clean filters are refused. Saved incomplete metadata remains
+possible, but Commit & push requires passing checks.
+
+The source must be its own repository with matching credential-free GitHub
+origin fetch/push destinations. Read-only remote refs establish the destination;
+main/master/remote-default/detached branches and remote advancement are refused.
+Only metadata/README may appear in existing ahead commits; otherwise the push
+is blocked before committing. No automatic merge, local branch creation or
+force-push occurs. A new remote feature branch can be based on the verified
+remote default tip. Operations serialize per dataset; failed pushes retain a
+local commit for a duplicate-free retry. This is the only user-approved source
+Git-write flow; Save and portal submission do not invoke it automatically.
+
+## Portal proposals
+
+The web app manages a dedicated, marked clone of `budaya-lab/data-portal` at
+`~/.cache/penjaga/data-portal` by default, outside the dataset root. An optional
+absolute `PORTAL_CLONE` overrides that location. Empty/relative overrides and
+existing unmarked directories are refused; it does not adopt developer checkouts.
+Opening the dataset's Portal tab (or refreshing its preview) fetches and
+fast-forwards local portal main, then prepares an entry comparison without
+applying proposal edits. The source reader checks the current dataset branch's pushed
+head through local `gh` authentication. It reads only a verified regular root
+descriptor at that SHA and compares its parsed metadata with the saved file.
+Git database metadata avoids file-diff endpoints; source histories and ordinary
+resource bytes are never fetched. Unsaved edits block the UI action. A saved/pushed
+mismatch returns a typed `needs-push` result before clone/dependency work, carrying
+only the two descriptors and verified source identity/branch/SHA. The Portal tab
+shows its readiness checklist, local-vs-GitHub diff and Metadata navigation rather
+than treating this expected state as a generic error. Failures from external
+commands identify their safe workflow stage without exposing command output.
+
+The app-local adapter matches the pushed Data Package `name` to the exact
+catalogue `slug`; repository names and provenance `sources[]` never select an
+entry. Duplicate slugs stop the operation. It preserves catalogue identity,
+publication, dates and confirmed lineage. New entries remain drafts. Supported
+source-owned metadata replaces catalogue values, including sources, version and
+supplied totals; absent optional values remove stale catalogue values. Source
+links must be credential-free HTTPS without queries/fragments. Private resource paths stay
+metadata-only; counts are supplied, not inferred. Resource membership and order
+come from the pushed descriptor, with existing public bucket summaries retained
+as an approved exception when not already listed. Other portal-only listings
+are removed; a declared bucket resource is not duplicated. Resource metadata is replaced, not merged with
+stale portal values. No resource files are copied or deleted. Public download
+updates keep reviewed release URLs for listed resources; new or changed public
+mappings require separate review and are blocked here.
+
+Explicit disclosure confirmation creates/updates a per-repository portal branch
+and PR using local Git/gh credentials. HTTPS Git calls delegate to the existing
+`gh` login via per-command credential-helper options, not persistent Git settings
+or token-bearing arguments/remotes. Git failures name the allowlisted operation
+without exposing arguments/output. The server rechecks the preview, runs the
+unchanged portal's `pnpm validate`, rechecks source identity/visibility and portal
+main, and stages only `datasets.json`. Preview and changed submission prepare
+dependencies on verified portal main with a frozen pnpm install, disabling
+lifecycle scripts and pnpmfile hooks. Portal pnpm subprocesses omit the inherited
+Steward `NODE_ENV`, so development/production server mode cannot alter portal
+installs or its test/build modes. Setup rechecks repository cleanliness and
+refuses linked dependency directories. Install failures stop before catalogue
+writes and can be retried from the tab. Unexpected files or stale inputs stop the
+operation. On the next retry, failed writes/validation and other unfinished
+tracked/staged/untracked edits are preserved in a named local Git recovery stash
+before switching to portal main. Recovery runs only after clone marker/path/remote
+verification, and stops on failure; it never applies/drops/pushes stashes. Preview
+notes expose the recovery ID. Ignored caches and committed proposal branches stay
+in place. No automatic reset, global tool installation, PR merge or source Git write occurs. The app
+serializes portal operations within its single local process. Portal application
+code/workflows and the portable validator are unchanged. See
+[portal setup](../apps/web/README.md#portal-submission).
 
 ## Filesystem boundaries
 

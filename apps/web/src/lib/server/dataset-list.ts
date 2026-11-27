@@ -1,9 +1,12 @@
 import { readDescriptor, DescriptorError } from './descriptor.ts';
 import { discoverDatasets } from './discovery.ts';
 import { inspectMetadata } from './metadata.ts';
+import { datasetBranch } from './dataset-git.ts';
+import type { DatasetBranch } from '../dataset-git.ts';
 
 export type DatasetStatus = {
   name: string;
+  git: DatasetBranch;
   summary: ReturnType<typeof inspectMetadata>['fields'] | null;
 } & (
   | { status: 'passed' | 'issues'; issueCount: number }
@@ -38,6 +41,7 @@ export async function listDatasets(root: string | undefined): Promise<DatasetSta
   const names = await discoverDatasets(root);
   const datasets: DatasetStatus[] = [];
   for (const name of names) {
+    const git = await datasetBranch(root, name);
     try {
       const text = await readDescriptor(root, name);
       const metadata = inspectMetadata(text);
@@ -45,10 +49,10 @@ export async function listDatasets(root: string | undefined): Promise<DatasetSta
       const summary = metadata.fields.length ? metadata.fields.filter(({ label }) =>
         ['Title', 'Creators', 'Task', 'Project', 'Stage'].includes(label)
       ) : null;
-      datasets.push({ name, status: issueCount ? 'issues' : 'passed', issueCount, summary });
+      datasets.push({ name, git, status: issueCount ? 'issues' : 'passed', issueCount, summary });
     } catch (cause) {
       if (!(cause instanceof DescriptorError)) throw cause;
-      datasets.push({ name, status: 'unavailable', message: cause.message, summary: null });
+      datasets.push({ name, git, status: 'unavailable', message: cause.message, summary: null });
     }
   }
   return datasets;

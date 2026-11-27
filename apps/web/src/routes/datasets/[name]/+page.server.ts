@@ -6,6 +6,7 @@ import {
 	resourceFormModel,
 } from "../../../lib/resource-fields.ts";
 import { readBuckets } from "../../../lib/server/buckets.ts";
+import { datasetBranch } from "../../../lib/server/dataset-git.ts";
 import { readDatasetSnapshot } from "../../../lib/server/dataset-text.ts";
 import { DescriptorError } from "../../../lib/server/descriptor.ts";
 import { DiscoveryError } from "../../../lib/server/discovery.ts";
@@ -20,8 +21,8 @@ import type { PageServerLoad } from "./$types";
 
 export const load = (async ({ params, url }) => {
 	const view = url.searchParams.get("view") ?? "readme";
-	if (view !== "readme" && view !== "metadata" && view !== "datapackage")
-		error(400, "Choose README, Metadata or datapackage.json.");
+	if (view !== "readme" && view !== "metadata" && view !== "datapackage" && view !== "portal")
+		error(400, "Choose README, Metadata, datapackage.json or Portal.");
 	try {
 		if (view === "readme") {
 			const [readme, buckets] = await Promise.all([
@@ -35,6 +36,7 @@ export const load = (async ({ params, url }) => {
 			params.name,
 			"datapackage.json",
 		);
+		if (view === "portal") return { name: params.name, view: "portal" as const };
 		if (view === "datapackage")
 			return {
 				name: params.name,
@@ -73,6 +75,7 @@ export const load = (async ({ params, url }) => {
 			sourceModel,
 			licenseModel,
 			contributorModel,
+			gitState: await datasetBranch(process.env.DATASET_ROOT, params.name),
 		};
 	} catch (cause) {
 		if (cause instanceof DescriptorError || cause instanceof DiscoveryError) {

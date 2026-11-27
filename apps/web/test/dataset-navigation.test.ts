@@ -11,7 +11,7 @@ type Link = { href: string; onclick?: (event: MouseEvent) => Promise<void> };
 
 // Compile the real page; replace router/component boundaries so its link handlers
 // can be exercised without a DOM. This is not an interactive browser test.
-test('README navigation refreshes server data while Metadata/JSON switches keep the draft', async (t) => {
+test('README navigation refreshes server data while Metadata/JSON/Portal switches keep the draft', async (t) => {
   const directory = await fs.mkdtemp(join(tmpdir(), 'steward-navigation-'));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   const app = fileURLToPath(new URL('../', import.meta.url));
@@ -55,7 +55,7 @@ test('README navigation refreshes server data while Metadata/JSON switches keep 
   } } });
   assert.match(rendered.body, /Dataset sections/);
 
-  for (const view of ['readme', 'metadata', 'datapackage']) {
+  for (const view of ['readme', 'metadata', 'datapackage', 'portal']) {
     const href = `/datasets/ds-example${view === 'readme' ? '' : `?view=${view}`}`;
     const link = buttons.find((button) => button.href === href);
     assert.ok(link);

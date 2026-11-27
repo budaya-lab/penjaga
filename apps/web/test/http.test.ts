@@ -63,6 +63,8 @@ async function serve(t: TestContext, mode: 'dev' | 'built', root?: string): Prom
 
   const env: NodeJS.ProcessEnv = { ...process.env, HOST: '0.0.0.0', PORT: String(port), NO_COLOR: '1' };
   delete env.DATASET_ROOT;
+  // Never let HTTP tests access the user's default portal cache or network.
+  env.PORTAL_CLONE = 'invalid-test-override';
   delete env.SOCKET_PATH;
   if (root !== undefined) env.DATASET_ROOT = root;
   if (mode === 'built') Object.assign(env, { PROTOCOL_HEADER: 'x-forwarded-proto', HOST_HEADER: 'x-forwarded-host', PORT_HEADER: 'x-forwarded-port' });
@@ -117,6 +119,88 @@ for (const mode of ['dev', 'built'] as const) {
     assert.equal((await fetch(url, { headers })).status, 200, logs());
     assert.equal((await fetch(url, { method: 'POST', headers, body: new URLSearchParams() })).status, 405);
     assert.equal((await fetch(url, { headers: { ...headers, origin: 'https://untrusted.example' } })).status, 403);
+  });
+
+  test(`${mode}: shows the dataset branch and protects commit/push requests before Git writes`, async (t) => {
+    const root = await fixture(t);
+    const directory = join(root, 'ds-example');
+    await fs.mkdir(directory);
+    await fs.writeFile(join(directory, 'datapackage.json'), '{}');
+    const initialized = spawnSync('git', ['init', '-b', 'refactor/test-metadata'], { cwd: directory, encoding: 'utf8' });
+    assert.equal(initialized.status, 0);
+    const before = await snapshot(root);
+    const { url } = await serve(t, mode, root);
+    const html = await (await fetch(`${url}/datasets/ds-example?view=metadata`)).text();
+    assert.match(html, /refactor\/test-metadata/);
+    assert.match(html, /Commit &amp; push/);
+    assert.match(html, /chore\(metadata\): update dataset metadata/);
+    const gitState = await (await fetch(`${url}/datasets/ds-example/git`)).json();
+    assert.deepEqual(gitState, { status: 'ready', branch: 'refactor/test-metadata', changes: ['datapackage.json'], ahead: null });
+    const endpoint = `${url}/datasets/ds-example/commit`;
+    assert.equal((await fetch(endpoint)).status, 405);
+    assert.equal((await fetch(endpoint, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })).status, 403);
+    const post = (body: string, type = 'application/json') => fetch(endpoint, { method: 'POST', headers: { origin: url, 'content-type': type }, body });
+    assert.equal((await post('{}', 'text/plain')).status, 415);
+    for (const body of ['{bad', '[]', '{}', '{"text":1,"message":"test"}', '{"text":"{}","message":1}']) assert.equal((await post(body)).status, 400);
+    assert.equal((await post('{"text":"{}","message":"","branch":"refactor/test-metadata"}')).status, 409);
+    const invalid = await post('{"text":"{}","message":"chore(metadata): update","branch":"refactor/test-metadata"}');
+    assert.equal(invalid.status, 409);
+    assert.match(await invalid.text(), /metadata checks/);
+    assert.deepEqual(await snapshot(root), before);
+  });
+
+  test(`${mode}: gives each dataset view a labelled section with a heading and description`, async (t) => {
+    const root = await fixture(t);
+    const directory = join(root, 'ds-example');
+    await fs.mkdir(directory);
+    await fs.writeFile(join(directory, 'datapackage.json'), '{}');
+    await fs.writeFile(join(directory, 'README.md'), '# Example\n\nSupplied dataset documentation.\n');
+    const { url } = await serve(t, mode, root);
+    for (const [view, heading, description] of [
+      ['readme', 'README', 'Read-only README.md.'],
+      ['metadata', 'Metadata', 'Edit locally, then save your changes.'],
+      ['datapackage', 'datapackage.json', 'Read-only JSON preview.'],
+      ['portal', 'Portal submission', 'Save locally, push to GitHub, then review the portal change.'],
+    ]) {
+      const html = (await (await fetch(`${url}/datasets/ds-example?view=${view}`)).text()).replace(/<!--[\s\S]*?-->/g, '');
+      const section = [...html.matchAll(/<section\b[^>]*aria-labelledby="([^"]+)"[^>]*>([\s\S]*)/g)]
+        .find(([, , content]) => content.includes(`>${heading}</h2>`));
+      assert.ok(section, `Missing labelled ${view} section`);
+      assert.ok(section[2].includes(`id="${section[1]}"`));
+      assert.ok(section[2].includes(description), `Missing ${view} description`);
+      assert.match(html, /aria-current="page"/);
+      if (view === 'datapackage') assert.match(html, /<div\b[^>]*role="textbox"[^>]*aria-readonly="true"[^>]*aria-multiline="true"[^>]*aria-label="Data Package JSON"[^>]*tabindex="0"/);
+    }
+  });
+
+  test(`${mode}: offers explicit portal preview and protects portal actions without touching data`, async (t) => {
+    const root = await fixture(t);
+    await fs.mkdir(join(root, 'ds-example'));
+    await fs.writeFile(join(root, 'ds-example/datapackage.json'), '{}');
+    const before = await snapshot(root);
+    const { url } = await serve(t, mode, root);
+    const html = await (await fetch(`${url}/datasets/ds-example?view=datapackage`)).text();
+    assert.match(html, /href="[^"]*\?view=portal"/);
+    assert.doesNotMatch(html, /Portal submission readiness|Refresh preview|Create \/ update portal PR/);
+    const portal = await fetch(`${url}/datasets/ds-example?view=portal`);
+    assert.equal(portal.status, 200);
+    const portalHtml = await portal.text();
+    assert.match(portalHtml, /Portal submission readiness/);
+    assert.match(portalHtml, /Save metadata/);
+    assert.match(portalHtml, /Push to GitHub/);
+    assert.match(portalHtml, /Review portal PR/);
+    assert.doesNotMatch(portalHtml, /Read-only JSON preview/);
+    assert.equal((await fetch(`${url}/datasets/ds-missing?view=portal`)).status, 404);
+    const endpoint = `${url}/datasets/ds-example/portal`;
+    assert.equal((await fetch(endpoint)).status, 405);
+    assert.equal((await fetch(endpoint, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{"action":"preview"}' })).status, 403);
+    const post = (body: string, type = 'application/json') => fetch(endpoint, { method: 'POST', headers: { origin: url, 'content-type': type }, body });
+    assert.equal((await post('{}', 'text/plain')).status, 415);
+    for (const body of ['{bad', '[]', '{"action":"submit"}', '{"action":"unknown"}', '{"action":"preview","action":"submit"}']) assert.equal((await post(body)).status, 400);
+    const response = await post('{"action":"preview"}');
+    assert.equal(response.status, 409);
+    assert.match(await response.text(), /PORTAL_CLONE/);
+    assert.deepEqual(await snapshot(root), before);
   });
 
   test(`${mode}: lists escaped names and statuses without following links or writing files`, async (t) => {
@@ -884,7 +968,7 @@ for (const mode of ['dev', 'built'] as const) {
     assert.match(html, /aria-label="Dataset views"/);
     assert.match(html, /<table\b/);
     assert.match(html, /<caption[^>]*>Showing 3 of 3 datasets/);
-    for (const heading of ['Dataset', 'Status', 'Task', 'Project', 'Stage', 'Creators']) {
+    for (const heading of ['Dataset', 'Metadata', 'Branch', 'Git status', 'Task', 'Project', 'Stage', 'Creators']) {
       assert.match(html, new RegExp(`<th[^>]*>${heading}</th>`));
     }
     assert.match(html, /&lt;b(?:>|&gt;)Supplied title&lt;\/b(?:>|&gt;)/);
@@ -936,6 +1020,21 @@ for (const mode of ['dev', 'built'] as const) {
       assert.equal((await invalid.text()).includes(root), false);
     }
     assert.deepEqual(await snapshot(base), before);
+  });
+
+  test(`${mode}: shows branch and Git status in dataset rows`, async (t) => {
+    const root = await fixture(t);
+    const directory = join(root, 'ds-example');
+    await fs.mkdir(directory);
+    await fs.writeFile(join(directory, 'datapackage.json'), '{}');
+    const initialized = spawnSync('git', ['init', '-b', 'feat/metadata'], { cwd: directory, encoding: 'utf8' });
+    assert.equal(initialized.status, 0);
+    const { url } = await serve(t, mode, root);
+    const listing = (await (await fetch(url)).text()).replace(/<!--[\s\S]*?-->/g, '');
+    assert.match(listing, /<th\b[^>]*>Branch<\/th>/);
+    assert.match(listing, /<th\b[^>]*>Git status<\/th>/);
+    assert.match(tableRow(listing, 'ds-example'), /feat\/metadata/);
+    assert.match(tableRow(listing, 'ds-example'), /1 changed file; no upstream/);
   });
 
   test(`${mode}: distinguishes empty roots from failed reads`, async (t) => {

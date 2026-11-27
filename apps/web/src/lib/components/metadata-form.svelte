@@ -1,5 +1,7 @@
 <script lang="ts">
     import { onDestroy } from "svelte";
+    import MetadataActions from "$lib/components/metadata-actions.svelte";
+    import type { DatasetBranch } from "$lib/dataset-git.ts";
     import MetadataContributors from "$lib/components/metadata-contributors.svelte";
     import MetadataKeywords from "$lib/components/metadata-keywords.svelte";
     import MetadataLicenses from "$lib/components/metadata-licenses.svelte";
@@ -35,6 +37,9 @@
         draft,
         reloadUrl,
         saveUrl,
+        commitUrl,
+        gitUrl,
+        branchState,
         datasetId,
         ondraft,
     }: {
@@ -59,6 +64,9 @@
         draft: MetadataDraft;
         reloadUrl: string;
         saveUrl: string;
+        commitUrl?: string;
+        gitUrl?: string;
+        branchState?: DatasetBranch;
         datasetId: string;
         ondraft: (datasetId: string, error: string) => void;
     } = $props();
@@ -69,6 +77,7 @@
     let syncError = $state("");
     let dirty = $state(false);
     let saving = $state(false);
+    let committing = $state(false);
     let saveMessage = $state("");
     let saveError = $state("");
     let disposed = false;
@@ -81,7 +90,7 @@
     onDestroy(() => { disposed = true; checker.dispose(); });
 
     async function save() {
-        if (saving || syncError || !dirty) return;
+        if (saving || committing || syncError || !dirty) return;
         const text = draft.text();
         saving = true;
         saveMessage = "";
@@ -284,7 +293,7 @@
         aria-busy={checkState.pending}
         class="scroll-mt-28 text-sm"
     >
-        <h2 class="mb-2 text-base font-medium">Metadata checks</h2>
+        <h3 class="mb-2 text-base font-medium">Metadata checks</h3>
         <p class="mb-2 text-xs text-muted-foreground">
             Checks inspect the JSON draft 500 ms after edits. Changes are not saved.
         </p>
@@ -307,19 +316,10 @@
         separate, read-only file reads. These checks do not authorize
         publication.
     </p>
-    <div
-        class="sticky bottom-0 flex flex-col gap-2 border-t bg-background py-3"
-    >
-        <p role="status" aria-live="polite" class="text-sm text-muted-foreground">
-            {saving ? 'Saving…' : saveMessage || (dirty || syncError ? 'Unsaved changes.' : 'No unsaved changes.')}
-        </p>
-        {#if saveError}<p role="alert" class="text-sm text-destructive">{saveError}</p>{/if}
-        <div class="flex flex-wrap items-center gap-2">
-            <Button type="button" disabled={saving || !!syncError || !dirty} onclick={save}>Save changes</Button>
-            <Button type="button" variant="outline" disabled>Reset form</Button>
-            <Button href={reloadUrl} variant="ghost" data-sveltekit-reload
-                >Reload file</Button
-            >
-        </div>
-    </div>
+    <MetadataActions
+        {saving} {saveMessage} {saveError} {dirty} {syncError} {reloadUrl}
+        {commitUrl} {gitUrl} {branchState} metadataText={() => draft.text()} onsave={save}
+        checksPending={checkState.pending} hasIssues={checkState.issues.length > 0}
+        bind:committing
+    />
 </section>

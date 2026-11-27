@@ -5,7 +5,12 @@ Penjaga provides shared dataset validation and a local Dataset Steward. The
 writing files. The [Steward app](apps/web/README.md) lists datasets, renders their
 READMEs and lets you edit, preview and save metadata locally. Save regenerates the
 README when metadata checks pass, keeping human notes and existing resource
-counts. Direct JSON editing and dataset creation are not implemented.
+counts. An explicit Commit & push action publishes saved metadata/generated
+README changes on the current dataset feature branch, with an editable message.
+The web app can also prepare catalogue-data PRs through a dedicated local
+portal clone, using pushed metadata and explicit public-disclosure confirmation.
+See [portal setup](apps/web/README.md#portal-submission). Direct JSON editing and
+dataset creation are not implemented.
 
 ## Development
 

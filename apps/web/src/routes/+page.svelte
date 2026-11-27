@@ -10,6 +10,7 @@
     import { Input } from "$lib/components/ui/input/index.js";
     import * as NativeSelect from "$lib/components/ui/native-select/index.js";
     import * as Table from "$lib/components/ui/table/index.js";
+    import { datasetGitStatus } from "$lib/dataset-git.ts";
     import type { PageProps } from "./$types";
 
     let { data }: PageProps = $props();
@@ -117,12 +118,14 @@
 
     <p class="text-xs leading-relaxed text-muted-foreground">
         Metadata checks only. Resource files and buckets are not read. These
-        checks do not authorize publication.
+        checks do not authorize publication. Git status covers saved metadata
+        and generated README files only, using local tracking refs without
+        fetching.
     </p>
 
     {#if data.datasets.length}
         <div class="min-w-0 overflow-hidden rounded-md border">
-            <Table.Root class="min-w-[56rem] table-fixed">
+            <Table.Root class="min-w-[76rem] table-fixed">
                 <Table.Caption class="mt-0 border-t px-3 py-2 text-xs">
                     Showing {data.datasets.length} of {data.counts.total} datasets
                 </Table.Caption>
@@ -138,7 +141,7 @@
                             scope="col"
                             class="w-32 h-9 px-3 py-2 normal-case tracking-normal"
                         >
-                            Status
+                            Metadata
                         </Table.Head>
                         {#each columns as column (column.label)}
                             <Table.Head
@@ -148,6 +151,16 @@
                                 {column.label}
                             </Table.Head>
                         {/each}
+                        <Table.Head
+                            scope="col"
+                            class="w-44 h-9 px-3 py-2 normal-case tracking-normal"
+                            >Branch</Table.Head
+                        >
+                        <Table.Head
+                            scope="col"
+                            class="w-44 h-9 px-3 py-2 normal-case tracking-normal"
+                            >Git status</Table.Head
+                        >
                     </Table.Row>
                 </Table.Header>
                 <Table.Body>
@@ -186,6 +199,21 @@
                                     {value}
                                 </Table.Cell>
                             {/each}
+                            <Table.Cell
+                                class="w-44 whitespace-normal wrap-anywhere px-3 py-2"
+                            >
+                                {dataset.git.status === "ready"
+                                    ? dataset.git.branch
+                                    : "Unavailable"}
+                            </Table.Cell>
+                            <Table.Cell
+                                class="w-44 whitespace-normal wrap-anywhere px-3 py-2"
+                                title={dataset.git.status === "unavailable"
+                                    ? dataset.git.message
+                                    : undefined}
+                            >
+                                {datasetGitStatus(dataset.git)}
+                            </Table.Cell>
                         </Table.Row>
                     {/each}
                 </Table.Body>
